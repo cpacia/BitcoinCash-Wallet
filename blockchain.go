@@ -10,6 +10,7 @@ import (
 	"sort"
 	"sync"
 	"time"
+	"errors"
 )
 
 // Blockchain settings.  These are kindof Bitcoin specific, but not contained in
@@ -72,6 +73,7 @@ func NewBlockchain(filePath string, walletCreationDate time.Time, params *chainc
 func (b *Blockchain) CommitHeader(header wire.BlockHeader) (bool, *StoredHeader, uint32, error) {
 	b.lock.Lock()
 	defer b.lock.Unlock()
+
 	newTip := false
 	var commonAncestor *StoredHeader
 	// Fetch our current best header from the db
@@ -92,6 +94,14 @@ func (b *Blockchain) CommitHeader(header wire.BlockHeader) (bool, *StoredHeader,
 			return false, nil, 0, fmt.Errorf("Header %s does not extend any known headers", header.BlockHash().String())
 		}
 	}
+
+	// Check to make sure we go onto the Bitcoin Cash fork
+	if b.params.Name == chaincfg.MainNetParams.Name &&
+		parentHeader.height + 1 == 478559 &&
+		!header.BlockHash().IsEqual(BitcoinCashForkBlock) {
+		return false, nil, 0, errors.New("Header 478559 is not Bitcoin Cash fork header")
+	}
+
 	valid := b.CheckHeader(header, parentHeader)
 	if !valid {
 		return false, nil, 0, nil
@@ -193,6 +203,38 @@ func (b *Blockchain) calcRequiredWork(header wire.BlockHeader, height int32, pre
 				}
 			}
 		}
+
+		// Bitcoin cash special difficulty rules.
+		// If producing the last 6 block took more than 12h, increase the difficulty
+		// target by 1/4 (which reduces the difficulty by 20%). This ensure the
+		// chain do not get stuck in case we lose hashrate abruptly.
+		pindex6, err := b.GetAncestor(prevHeader, height-7)
+		if err != nil {
+			log.Error(err)
+			return 0, err
+		}
+		pindex6Mtp, err := b.CalcMedianTimePast(pindex6.header)
+		if err != nil {
+			log.Error(err)
+			return 0, err
+		}
+		pindexPrevMtp, err := b.CalcMedianTimePast(prevHeader.header)
+		if err != nil {
+			log.Error(err)
+			return 0, err
+		}
+		if pindexPrevMtp.Sub(pindex6Mtp) >= time.Hour * 12 {
+			nPow := blockchain.CompactToBig(prevHeader.header.Bits)
+			shft := new(big.Int).Rsh(nPow, 2)
+			nPow.Add(nPow, shft)
+
+			// Make sure it doesn't go over limit
+			if nPow.Cmp(b.params.PowLimit) > 0 {
+				return blockchain.BigToCompact(b.params.PowLimit), nil
+			}
+			return blockchain.BigToCompact(nPow), nil
+		}
+
 		// Just return the bits from the last header
 		return prevHeader.header.Bits, nil
 	}
@@ -239,6 +281,19 @@ func (b *Blockchain) GetEpoch() (*wire.BlockHeader, error) {
 	}
 	log.Debug("Epoch", sh.header.BlockHash().String())
 	return &sh.header, nil
+}
+
+func (b *Blockchain) GetAncestor(prevHeader *StoredHeader, height int32) (*StoredHeader, error){
+	var err error
+	for {
+		prevHeader, err = b.db.GetPreviousHeader(prevHeader.header)
+		if err != nil {
+			return prevHeader, err
+		}
+		if prevHeader.height == height {
+			return prevHeader
+		}
+	}
 }
 
 func (b *Blockchain) GetNPrevBlockHashes(n int) []*chainhash.Hash {

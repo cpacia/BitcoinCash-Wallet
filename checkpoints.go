@@ -16,22 +16,27 @@ var mainnetCheckpoints []Checkpoint
 var testnet3Checkpoints []Checkpoint
 var regtestCheckpoint Checkpoint
 
+var BitcoinCashForkBlock *chainhash.Hash
+
 func init() {
+	// Bitcoin Cash Fork
+	BitcoinCashForkBlock, _ = chainhash.NewHashFromStr("000000000000000000651ef99cb9fcbe0dadde1d424bd9f15ff20136191a5eec")
+
 	// Mainnet
-	mainnetPrev, _ := chainhash.NewHashFromStr("000000000000000001389446206ebcd378c32cd00b4920a8a1ba7b540ca7d699")
-	mainnetMerk, _ := chainhash.NewHashFromStr("ddc4fede55aeebe6e3bfd3292145b011a4f16ead187ed90d7df0fd4c020b6ab6")
+	mainnetPrev, _ := chainhash.NewHashFromStr("0000000000000000010e0373719b7538e713e47d8d7189826dce4264d85a79b8")
+	mainnetMerk, _ := chainhash.NewHashFromStr("28e3ae14925aeead5b44a885bca88e06ec37483ae905e65d57aa8cd60cb74b2f")
 	mainnetCheckpoints = append(mainnetCheckpoints, Checkpoint{
-		Height: 473760,
+		Height: 477792,
 		Header: wire.BlockHeader{
 			Version:    536870914,
 			PrevBlock:  *mainnetPrev,
 			MerkleRoot: *mainnetMerk,
-			Timestamp:  time.Unix(1498956437, 0),
-			Bits:       402754864,
-			Nonce:      134883004,
+			Timestamp:  time.Unix(1501153458, 0),
+			Bits:       402736949,
+			Nonce:      165193412,
 		},
 	})
-	if mainnetCheckpoints[0].Header.BlockHash().String() != "000000000000000000802ba879f1b7a638dcea6ff0ceb614d91afc8683ac0502" {
+	if mainnetCheckpoints[0].Header.BlockHash().String() != "00000000000000000016ba7786309176445b838b36a16bd1ef3c3e3020473206" {
 		panic("Invalid checkpoint")
 	}
 
