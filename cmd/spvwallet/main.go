@@ -181,6 +181,13 @@ func (x *Start) Execute(args []string) error {
 	f.Close()
 
 	// Load settings
+	type Fees struct {
+		Priority uint64 `json:"priority"`
+		Normal   uint64 `json:"normal"`
+		Economic uint64 `json:"economic"`
+		FeeAPI   string `json:"feeAPI"`
+	}
+
 	type Settings struct {
 		FiatCode      string `json:"fiatCode"`
 		FiatSymbol    string `json:"fiatSymbol"`
@@ -190,12 +197,40 @@ func (x *Start) Execute(args []string) error {
 		DecimalPlaces int    `json:"decimalPlaces"`
 		TrustedPeer   string `json:"trustedPeer"`
 		Proxy         string `json:"proxy"`
+		Fees          Fees   `json:"fees"`
 	}
 
 	var settings Settings
 	s, err := ioutil.ReadFile(path.Join(basepath, "settings.json"))
-	if err == nil {
-		json.Unmarshal([]byte(s), &settings)
+	if err != nil {
+		settings = Settings{
+			FiatCode:      "USD",
+			FiatSymbol:    "$",
+			FeeLevel:      "priority",
+			SelectBox:     "bitcoin",
+			BitcoinUnit:   "BTC",
+			DecimalPlaces: 5,
+			Fees: Fees{
+				Priority: config.HighFee,
+				Normal:   config.MediumFee,
+				Economic: config.LowFee,
+			},
+		}
+		f, err := os.Create(path.Join(basepath, "settings.json"))
+		if err != nil {
+			return err
+		}
+		s, err := json.MarshalIndent(&settings, "", "    ")
+		if err != nil {
+			return err
+		}
+		f.Write(s)
+		f.Close()
+	} else {
+		err := json.Unmarshal([]byte(s), &settings)
+		if err != nil {
+			return err
+		}
 	}
 	if settings.TrustedPeer != "" {
 		var tp net.Addr
@@ -217,6 +252,11 @@ func (x *Start) Execute(args []string) error {
 		}
 		config.Proxy = tbDialer
 	}
+	feeApi, _ := url.Parse(settings.Fees.FeeAPI)
+	config.FeeAPI = *feeApi
+	config.HighFee = settings.Fees.Priority
+	config.MediumFee = settings.Fees.Normal
+	config.LowFee = settings.Fees.Economic
 
 	creationDate := time.Time{}
 	if x.WalletCreationDate != "" {
