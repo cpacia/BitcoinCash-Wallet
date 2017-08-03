@@ -4,18 +4,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/cpacia/BitcoinCash-Wallet/exchangerates"
-	"github.com/cpacia/BitcoinCash-Wallet"
-	"github.com/cpacia/BitcoinCash-Wallet/api"
-	"github.com/cpacia/BitcoinCash-Wallet/cli"
-	"github.com/cpacia/BitcoinCash-Wallet/db"
-	"github.com/cpacia/BitcoinCash-Wallet/gui"
-	"github.com/cpacia/BitcoinCash-Wallet/gui/bootstrap"
 	"github.com/asticode/go-astilectron"
 	"github.com/asticode/go-astilog"
 	"github.com/atotto/clipboard"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
+	"github.com/cpacia/BitcoinCash-Wallet"
+	"github.com/cpacia/BitcoinCash-Wallet/api"
+	"github.com/cpacia/BitcoinCash-Wallet/cli"
+	"github.com/cpacia/BitcoinCash-Wallet/db"
+	"github.com/cpacia/BitcoinCash-Wallet/exchangerates"
+	"github.com/cpacia/BitcoinCash-Wallet/gui"
+	"github.com/cpacia/BitcoinCash-Wallet/gui/bootstrap"
 	"github.com/fatih/color"
 	"github.com/jessevdk/go-flags"
 	"github.com/natefinch/lumberjack"
@@ -43,7 +43,7 @@ type Start struct {
 	WalletCreationDate string `short:"w" long:"walletcreationdate" description:"specify the date the seed was created. if omitted the wallet will sync from the oldest checkpoint."`
 	TrustedPeer        string `short:"i" long:"trustedpeer" description:"specify a single trusted peer to connect to"`
 	Tor                bool   `long:"tor" description:"connect via a running Tor daemon"`
-	FeeAPI             string `short:"f" long:"feeapi" description:"fee API to use to fetch current fee rates. set as empty string to disable API lookups." default:"https://bitcoinfees.21.co/api/v1/fees/recommended"`
+	FeeAPI             string `short:"f" long:"feeapi" description:"fee API to use to fetch current fee rates. set as empty string to disable API lookups." default:""`
 	MaxFee             uint64 `short:"x" long:"maxfee" description:"the fee-per-byte ceiling beyond which fees cannot go" default:"2000"`
 	LowDefaultFee      uint64 `short:"e" long:"economicfee" description:"the default low fee-per-byte" default:"20"`
 	MediumDefaultFee   uint64 `short:"n" long:"normalfee" description:"the default medium fee-per-byte" default:"90"`
@@ -68,7 +68,7 @@ func main() {
 	}()
 	if len(os.Args) == 1 {
 		start.Gui = true
-		start.Execute([]string{})
+		start.Execute([]string{"useDefaults"})
 	} else {
 		parser.AddCommand("start",
 			"start the wallet",
@@ -146,10 +146,13 @@ func (x *Start) Execute(args []string) error {
 		}
 		config.FeeAPI = *u
 	}
-	config.MaxFee = x.MaxFee
-	config.LowFee = x.LowDefaultFee
-	config.MediumFee = x.MediumDefaultFee
-	config.HighFee = x.HighDefaultFee
+
+	if len(args) == 0 {
+		config.MaxFee = x.MaxFee
+		config.LowFee = x.LowDefaultFee
+		config.MediumFee = x.MediumDefaultFee
+		config.HighFee = x.HighDefaultFee
+	}
 
 	// Make the logging a little prettier
 	var fileLogFormat = logging.MustStringFormatter(`%{time:15:04:05.000} [%{shortfunc}] [%{level}] %{message}`)
@@ -214,6 +217,7 @@ func (x *Start) Execute(args []string) error {
 				Priority: config.HighFee,
 				Normal:   config.MediumFee,
 				Economic: config.LowFee,
+				FeeAPI:   config.FeeAPI.String(),
 			},
 		}
 		f, err := os.Create(path.Join(basepath, "settings.json"))

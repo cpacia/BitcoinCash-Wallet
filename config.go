@@ -63,7 +63,7 @@ func NewDefaultConfig() *Config {
 	if os.IsNotExist(ferr) {
 		os.Mkdir(repoPath, os.ModePerm)
 	}
-	feeApi, _ := url.Parse("https://bitcoinfees.21.co/api/v1/fees/recommended")
+	feeApi, _ := url.Parse("")
 	return &Config{
 		Params:    &chaincfg.MainNetParams,
 		UserAgent: "spvwallet",
