@@ -390,7 +390,7 @@
         viewDetails.innerText = "View Details";
         viewDetails.classList.add("viewdetails");
         viewDetails.onclick = function() {
-            astilectron.send({name: "openbrowser", payload: "https://blockchain.info/tx/" + tx.Txid});
+            astilectron.send({name: "openbrowser", payload: "https://blockchair.com/bitcoin-cash/transaction/" + tx.Txid});
         };
         rightDiv.appendChild(viewDetails);
 
