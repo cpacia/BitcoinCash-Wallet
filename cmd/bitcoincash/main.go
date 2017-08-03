@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/OpenBazaar/openbazaar-go/bitcoin/exchange"
+	"github.com/cpacia/BitcoinCash-Wallet/exchangerates"
 	"github.com/cpacia/BitcoinCash-Wallet"
 	"github.com/cpacia/BitcoinCash-Wallet/api"
 	"github.com/cpacia/BitcoinCash-Wallet/cli"
@@ -288,7 +288,7 @@ func (x *Start) Execute(args []string) error {
 	if x.Gui {
 		go wallet.Start()
 
-		exchangeRates := exchange.NewBitcoinPriceFetcher(nil)
+		exchangeRates := exchangerates.NewBitcoinCashPriceFetcher(config.Proxy)
 
 		type Stats struct {
 			Confirmed    int64  `json:"confirmed"`
