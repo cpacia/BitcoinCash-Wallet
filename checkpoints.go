@@ -16,11 +16,12 @@ var mainnetCheckpoints []Checkpoint
 var testnet3Checkpoints []Checkpoint
 var regtestCheckpoint Checkpoint
 
-var BitcoinCashForkBlock *chainhash.Hash
+var BitcoinCashMainnetForkBlock *chainhash.Hash
+var BitcoinCashTestnet3ForkBlock *chainhash.Hash
 
 func init() {
 	// Bitcoin Cash Fork
-	BitcoinCashForkBlock, _ = chainhash.NewHashFromStr("000000000000000000651ef99cb9fcbe0dadde1d424bd9f15ff20136191a5eec")
+	BitcoinCashMainnetForkBlock, _ = chainhash.NewHashFromStr("000000000000000000651ef99cb9fcbe0dadde1d424bd9f15ff20136191a5eec")
 
 	// Mainnet
 	mainnetPrev, _ := chainhash.NewHashFromStr("0000000000000000010e0373719b7538e713e47d8d7189826dce4264d85a79b8")
@@ -41,6 +42,8 @@ func init() {
 	}
 
 	// Testnet3
+	BitcoinCashTestnet3ForkBlock, _ = chainhash.NewHashFromStr("00000000f17c850672894b9a75b63a1e72830bbd5f4c8889b5c1a80e7faef138")
+
 	testnet3Prev, _ := chainhash.NewHashFromStr("0000000000001e8cdb2d98471a5c60bdbddbe644b9ad08e17a97b3a7dce1e332")
 	testnet3Merk, _ := chainhash.NewHashFromStr("f675c565b293be2ad808b01b0a763557c8874e4aefe7f2eea0dab91b1f60ec45")
 	testnet3Checkpoints = append(testnet3Checkpoints, Checkpoint{
@@ -82,4 +85,25 @@ func GetCheckpoint(walletCreationDate time.Time, params *chaincfg.Params) Checkp
 	default:
 		return regtestCheckpoint
 	}
+}
+
+func ForkHeight(params *chaincfg.Params) uint32 {
+	switch(params.Name) {
+	case chaincfg.MainNetParams.Name:
+		return 478559
+	case chaincfg.TestNet3Params.Name:
+		return 1155875
+	}
+	return 0
+}
+
+func IsForkBlock(params *chaincfg.Params, header wire.BlockHeader) bool {
+	ckHash := header.BlockHash()
+	switch(params.Name) {
+	case chaincfg.MainNetParams.Name:
+		return ckHash.IsEqual(BitcoinCashMainnetForkBlock)
+	case chaincfg.TestNet3Params.Name:
+		return ckHash.IsEqual(BitcoinCashTestnet3ForkBlock)
+	}
+	return false
 }

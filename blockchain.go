@@ -96,11 +96,8 @@ func (b *Blockchain) CommitHeader(header wire.BlockHeader) (bool, *StoredHeader,
 	}
 
 	// Check to make sure we go onto the Bitcoin Cash fork
-	ckHash := header.BlockHash()
-	if b.params.Name == chaincfg.MainNetParams.Name &&
-		parentHeader.height + 1 == 478559 &&
-		!ckHash.IsEqual(BitcoinCashForkBlock) {
-		return false, nil, 0, errors.New("Header 478559 is not Bitcoin Cash fork header")
+	if parentHeader.height + 1 == ForkHeight(b.params) && !IsForkBlock(b.params, header) {
+		return false, nil, 0, errors.New("Header is not hardcoded fork header")
 	}
 
 	valid := b.CheckHeader(header, parentHeader)
@@ -209,7 +206,7 @@ func (b *Blockchain) calcRequiredWork(header wire.BlockHeader, height int32, pre
 		// If producing the last 6 block took more than 12h, increase the difficulty
 		// target by 1/4 (which reduces the difficulty by 20%). This ensure the
 		// chain do not get stuck in case we lose hashrate abruptly.
-		if b.params.Name == chaincfg.MainNetParams.Name && height >= 478559 {
+		if uint32(height) >= ForkHeight(b.params) {
 			pindex6, err := b.GetAncestor(prevHeader, height - 7)
 			if err != nil {
 				log.Error(err)
