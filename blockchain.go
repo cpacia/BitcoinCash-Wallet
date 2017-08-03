@@ -257,7 +257,7 @@ func (b *Blockchain) CalcMedianTimePast(header *wire.BlockHeader) (time.Time, er
 	for i := 0; i < medianTimeBlocks; i++ {
 		numNodes++
 		timestamps[i] = iterNode.header.Timestamp.Unix()
-		iterNode, err = b.db.GetHeader(header.BlockHash())
+		iterNode, err = b.db.GetHeader(iterNode.header.BlockHash())
 		if err != nil {
 			return time.Time{}, err
 		}
