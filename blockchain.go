@@ -96,9 +96,10 @@ func (b *Blockchain) CommitHeader(header wire.BlockHeader) (bool, *StoredHeader,
 	}
 
 	// Check to make sure we go onto the Bitcoin Cash fork
+	ckHash := header.BlockHash()
 	if b.params.Name == chaincfg.MainNetParams.Name &&
 		parentHeader.height + 1 == 478559 &&
-		!header.BlockHash().IsEqual(BitcoinCashForkBlock) {
+		!ckHash.IsEqual(BitcoinCashForkBlock) {
 		return false, nil, 0, errors.New("Header 478559 is not Bitcoin Cash fork header")
 	}
 
@@ -157,7 +158,7 @@ func (b *Blockchain) CheckHeader(header wire.BlockHeader, prevHeader StoredHeade
 	if !b.params.ReduceMinDifficulty {
 		diffTarget, err := b.calcRequiredWork(header, int32(height+1), prevHeader)
 		if err != nil {
-			log.Errorf("Error calclating difficulty", err)
+			log.Errorf("Error calculating difficulty %s", err.Error())
 			return false
 		}
 		if header.Bits != diffTarget {
@@ -208,31 +209,34 @@ func (b *Blockchain) calcRequiredWork(header wire.BlockHeader, height int32, pre
 		// If producing the last 6 block took more than 12h, increase the difficulty
 		// target by 1/4 (which reduces the difficulty by 20%). This ensure the
 		// chain do not get stuck in case we lose hashrate abruptly.
-		pindex6, err := b.GetAncestor(prevHeader, height-7)
-		if err != nil {
-			log.Error(err)
-			return 0, err
-		}
-		pindex6Mtp, err := b.CalcMedianTimePast(pindex6.header)
-		if err != nil {
-			log.Error(err)
-			return 0, err
-		}
-		pindexPrevMtp, err := b.CalcMedianTimePast(prevHeader.header)
-		if err != nil {
-			log.Error(err)
-			return 0, err
-		}
-		if pindexPrevMtp.Sub(pindex6Mtp) >= time.Hour * 12 {
-			nPow := blockchain.CompactToBig(prevHeader.header.Bits)
-			shft := new(big.Int).Rsh(nPow, 2)
-			nPow.Add(nPow, shft)
-
-			// Make sure it doesn't go over limit
-			if nPow.Cmp(b.params.PowLimit) > 0 {
-				return blockchain.BigToCompact(b.params.PowLimit), nil
+		if b.params.Name == chaincfg.MainNetParams.Name && height >= 478559 {
+			pindex6, err := b.GetAncestor(prevHeader, height - 7)
+			if err != nil {
+				log.Error(err)
+				return 0, err
 			}
-			return blockchain.BigToCompact(nPow), nil
+			pindex6Mtp, err := b.CalcMedianTimePast(pindex6.header)
+			if err != nil {
+				log.Error(err)
+				return 0, err
+			}
+			pindexPrevMtp, err := b.CalcMedianTimePast(prevHeader.header)
+			if err != nil {
+				log.Error(err)
+				return 0, err
+			}
+			if pindexPrevMtp.Sub(pindex6Mtp) >= time.Hour * 12 {
+				log.Noticef("Adjust difficulty down at height %d", height)
+				nPow := blockchain.CompactToBig(prevHeader.header.Bits)
+				shft := new(big.Int).Rsh(nPow, 2)
+				nPow.Add(nPow, shft)
+
+				// Make sure it doesn't go over limit
+				if nPow.Cmp(b.params.PowLimit) > 0 {
+					return blockchain.BigToCompact(b.params.PowLimit), nil
+				}
+				return blockchain.BigToCompact(nPow), nil
+			}
 		}
 
 		// Just return the bits from the last header
@@ -247,17 +251,16 @@ func (b *Blockchain) calcRequiredWork(header wire.BlockHeader, height int32, pre
 	return calcDiffAdjust(*epoch, prevHeader.header, b.params), nil
 }
 
-func (b *Blockchain) CalcMedianTimePast(header *wire.BlockHeader) (time.Time, error) {
-	iterNode := StoredHeader{header: *header}
-	var err error
-
+func (b *Blockchain) CalcMedianTimePast(header wire.BlockHeader) (time.Time, error) {
 	timestamps := make([]int64, medianTimeBlocks)
 	numNodes := 0
+	iterNode := StoredHeader{header: header}
+	var err error
 
 	for i := 0; i < medianTimeBlocks; i++ {
 		numNodes++
 		timestamps[i] = iterNode.header.Timestamp.Unix()
-		iterNode, err = b.db.GetHeader(iterNode.header.BlockHash())
+		iterNode, err = b.db.GetPreviousHeader(iterNode.header)
 		if err != nil {
 			return time.Time{}, err
 		}
@@ -283,15 +286,15 @@ func (b *Blockchain) GetEpoch() (*wire.BlockHeader, error) {
 	return &sh.header, nil
 }
 
-func (b *Blockchain) GetAncestor(prevHeader *StoredHeader, height int32) (*StoredHeader, error){
+func (b *Blockchain) GetAncestor(prevHeader StoredHeader, height int32) (*StoredHeader, error){
 	var err error
 	for {
 		prevHeader, err = b.db.GetPreviousHeader(prevHeader.header)
 		if err != nil {
-			return prevHeader, err
+			return &prevHeader, err
 		}
-		if prevHeader.height == height {
-			return prevHeader
+		if prevHeader.height == uint32(height) {
+			return &prevHeader, nil
 		}
 	}
 }

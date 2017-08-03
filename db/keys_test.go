@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
-	"github.com/OpenBazaar/spvwallet"
+	"github.com/cpacia/BitcoinCash-Wallet"
 	"github.com/btcsuite/btcd/btcec"
 	"sync"
 	"testing"

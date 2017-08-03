@@ -31,7 +31,7 @@ func init() {
 			Version:    536870914,
 			PrevBlock:  *mainnetPrev,
 			MerkleRoot: *mainnetMerk,
-			Timestamp:  time.Unix(1501153458, 0),
+			Timestamp:  time.Unix(1501153434, 0),
 			Bits:       402736949,
 			Nonce:      165193412,
 		},

@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/OpenBazaar/openbazaar-go/bitcoin/exchange"
-	"github.com/OpenBazaar/spvwallet"
-	"github.com/OpenBazaar/spvwallet/api"
-	"github.com/OpenBazaar/spvwallet/cli"
-	"github.com/OpenBazaar/spvwallet/db"
-	"github.com/OpenBazaar/spvwallet/gui"
-	"github.com/OpenBazaar/spvwallet/gui/bootstrap"
+	"github.com/cpacia/BitcoinCash-Wallet"
+	"github.com/cpacia/BitcoinCash-Wallet/api"
+	"github.com/cpacia/BitcoinCash-Wallet/cli"
+	"github.com/cpacia/BitcoinCash-Wallet/db"
+	"github.com/cpacia/BitcoinCash-Wallet/gui"
+	"github.com/cpacia/BitcoinCash-Wallet/gui/bootstrap"
 	"github.com/asticode/go-astilectron"
 	"github.com/asticode/go-astilog"
 	"github.com/atotto/clipboard"
@@ -286,7 +286,7 @@ func (x *Start) Execute(args []string) error {
 		// Run bootstrap
 		if err := bootstrap.Run(bootstrap.Options{
 			AstilectronOptions: astilectron.Options{
-				AppName:            "spvwallet",
+				AppName:            "Bitcoin Cash Wallet",
 				AppIconDefaultPath: iconPath,
 				//AppIconDarwinPath:  p + "/gopher.icns",
 				BaseDirectoryPath: basepath,

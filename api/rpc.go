@@ -3,8 +3,8 @@ package api
 import (
 	"encoding/hex"
 	"errors"
-	"github.com/OpenBazaar/spvwallet"
-	"github.com/OpenBazaar/spvwallet/api/pb"
+	"github.com/cpacia/BitcoinCash-Wallet"
+	"github.com/cpacia/BitcoinCash-Wallet/api/pb"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
