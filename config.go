@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"runtime"
 )
 
 type Config struct {
@@ -57,7 +58,7 @@ type Config struct {
 }
 
 func NewDefaultConfig() *Config {
-	repoPath, _ := homedir.Expand(filepath.Join("~", ".bitcoincash"))
+	repoPath, _ := getRepoPath()
 	_, ferr := os.Stat(repoPath)
 	if os.IsNotExist(ferr) {
 		os.Mkdir(repoPath, os.ModePerm)
@@ -74,4 +75,27 @@ func NewDefaultConfig() *Config {
 		FeeAPI:    *feeApi,
 		Logger:    logging.NewLogBackend(os.Stdout, "", 0),
 	}
+}
+
+func getRepoPath() (string, error) {
+	// Set default base path and directory name
+	path := "~"
+	directoryName := "BitcoinCash"
+
+	// Override OS-specific names
+	switch runtime.GOOS {
+	case "linux":
+		directoryName = ".bitcoincash"
+	case "darwin":
+		path = "~/Library/Application Support"
+	}
+
+	// Join the path and directory name, then expand the home path
+	fullPath, err := homedir.Expand(filepath.Join(path, directoryName))
+	if err != nil {
+		return "", err
+	}
+
+	// Return the shortest lexical representation of the path
+	return filepath.Clean(fullPath), nil
 }
