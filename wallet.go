@@ -51,7 +51,7 @@ type SPVWallet struct {
 
 var log = logging.MustGetLogger("bitcoin")
 
-const WALLET_VERSION = "0.1.0"
+const WALLET_VERSION = "0.1.1"
 
 func NewSPVWallet(config *Config) (*SPVWallet, error) {
 
@@ -207,8 +207,7 @@ func (w *SPVWallet) NewAddress(purpose KeyPurpose) btc.Address {
 	i, _ := w.txstore.Keys().GetUnused(purpose)
 	key, _ := w.keyManager.generateChildKey(purpose, uint32(i[1]))
 	addr, _ := key.Address(w.params)
-	script, _ := txscript.PayToAddrScript(btc.Address(addr))
-	w.txstore.Keys().MarkKeyAsUsed(script)
+	w.txstore.Keys().MarkKeyAsUsed(addr.ScriptAddress())
 	w.txstore.PopulateAdrs()
 	return btc.Address(addr)
 }
