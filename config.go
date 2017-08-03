@@ -57,7 +57,7 @@ type Config struct {
 }
 
 func NewDefaultConfig() *Config {
-	repoPath, _ := homedir.Expand(filepath.Join("~", ".spvwallet"))
+	repoPath, _ := homedir.Expand(filepath.Join("~", ".bitcoincash"))
 	_, ferr := os.Stat(repoPath)
 	if os.IsNotExist(ferr) {
 		os.Mkdir(repoPath, os.ModePerm)

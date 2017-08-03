@@ -314,7 +314,7 @@ func (w *SPVWallet) CreateMultisigSignature(ins []TransactionInput, outs []Trans
 	}
 
 	for i := range tx.TxIn {
-		sig, err := txscript.RawTxInSignature(tx, i, redeemScript, txscript.SigHashAll, signingKey)
+		sig, err := txscript.RawTxInSignature(tx, i, redeemScript, txscript.SigHashAll, signingKey, ins[i].Value)
 		if err != nil {
 			continue
 		}
@@ -501,7 +501,7 @@ func (w *SPVWallet) SweepAddress(utxos []Utxo, address *btc.Address, key *hd.Ext
 			prevOutScript := additionalPrevScripts[txIn.PreviousOutPoint]
 			script, err := txscript.SignTxOutput(w.params,
 				tx, i, prevOutScript, txscript.SigHashAll, getKey,
-				getScript, txIn.SignatureScript)
+				getScript, txIn.SignatureScript, utxos[i].Value)
 			if err != nil {
 				return nil, errors.New("Failed to sign transaction")
 			}
@@ -511,7 +511,7 @@ func (w *SPVWallet) SweepAddress(utxos []Utxo, address *btc.Address, key *hd.Ext
 			if err != nil {
 				return nil, err
 			}
-			script, err := txscript.RawTxInSignature(tx, i, *redeemScript, txscript.SigHashAll, priv)
+			script, err := txscript.RawTxInSignature(tx, i, *redeemScript, txscript.SigHashAll, priv, utxos[i].Value)
 			if err != nil {
 				return nil, err
 			}
@@ -553,6 +553,7 @@ func (w *SPVWallet) buildTx(amount int64, addr btc.Address, feeLevel FeeLevel, o
 	for k := range coinMap {
 		coins = append(coins, k)
 	}
+	var inVals []int64
 	inputSource := func(target btc.Amount) (total btc.Amount, inputs []*wire.TxIn, scripts [][]byte, err error) {
 		coinSelector := coinset.MaxValueAgeCoinSelector{MaxInputs: 10000, MinChangeAmount: btc.Amount(10000)}
 		coins, err := coinSelector.CoinSelect(target, coins)
@@ -579,6 +580,9 @@ func (w *SPVWallet) buildTx(amount int64, addr btc.Address, feeLevel FeeLevel, o
 			}
 			wif, _ := btc.NewWIF(privKey, w.params, true)
 			additionalKeysByAddress[addr.EncodeAddress()] = wif
+			val := c.Value()
+			sat := val.ToUnit(btc.AmountSatoshi)
+			inVals = append(inVals, int64(sat))
 		}
 		return total, inputs, scripts, nil
 	}
@@ -625,7 +629,7 @@ func (w *SPVWallet) buildTx(amount int64, addr btc.Address, feeLevel FeeLevel, o
 		prevOutScript := additionalPrevScripts[txIn.PreviousOutPoint]
 		script, err := txscript.SignTxOutput(w.params,
 			authoredTx.Tx, i, prevOutScript, txscript.SigHashAll, getKey,
-			getScript, txIn.SignatureScript)
+			getScript, txIn.SignatureScript, inVals[i])
 		if err != nil {
 			return nil, errors.New("Failed to sign transaction")
 		}

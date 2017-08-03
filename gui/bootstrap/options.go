@@ -3,7 +3,7 @@ package bootstrap
 import (
 	"net/http"
 
-	"github.com/OpenBazaar/spvwallet"
+	"github.com/cpacia/BitcoinCash-Wallet"
 	"github.com/asticode/go-astilectron"
 	"github.com/julienschmidt/httprouter"
 )
