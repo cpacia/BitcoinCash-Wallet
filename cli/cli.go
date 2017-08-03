@@ -79,6 +79,18 @@ func SetupCli(parser *flags.Parser) {
 			"> spvwallet haskey 1DxGWC22a46VPEjq8YKoeVXSLzB7BA8sJS\n"+
 			"true\n",
 		&hasKey)
+	parser.AddCommand("getkey",
+		"get a private key",
+		"Return the private key for the given address",
+		&getKey)
+	parser.AddCommand("listaddresses",
+		"list all addresses",
+		"Returns all addresses currently watched by the wallet",
+		&listAddresses)
+	parser.AddCommand("listkeys",
+		"list all private keys",
+		"Returns all private keys currently watched by the wallet",
+		&listKeys)
 	parser.AddCommand("transactions",
 		"get a list of transactions",
 		"Returns a json list of the wallet's transactions",
@@ -954,6 +966,67 @@ func (x *DumpHeaders) Execute(args []string) error {
 	} else {
 		db, _ := spvwallet.NewHeaderDB(args[0])
 		db.Print(os.Stdout)
+	}
+	return nil
+}
+
+type GetKey struct{}
+
+var getKey GetKey
+
+func (x *GetKey) Execute(args []string) error {
+	client, conn, err := newGRPCClient()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	if len(args) <= 0 {
+		return errors.New("Address is required")
+	}
+	resp, err := client.GetKey(context.Background(), &pb.Address{args[0]})
+	if err != nil {
+		return err
+	}
+	fmt.Println(resp.Key)
+	return nil
+}
+
+type ListAddresses struct{}
+
+var listAddresses ListAddresses
+
+func (x *ListAddresses) Execute(args []string) error {
+	client, conn, err := newGRPCClient()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	resp, err := client.ListAddresses(context.Background(), &pb.Empty{})
+	if err != nil {
+		return err
+	}
+	for _, addr := range resp.Addresses {
+		fmt.Println(addr.Addr)
+	}
+	return nil
+}
+
+type ListKeys struct{}
+
+var listKeys ListKeys
+
+func (x *ListKeys) Execute(args []string) error {
+	client, conn, err := newGRPCClient()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	resp, err := client.ListKeys(context.Background(), &pb.Empty{})
+	if err != nil {
+		return err
+	}
+	for _, key := range resp.Keys {
+		fmt.Println(key.Key)
 	}
 	return nil
 }
