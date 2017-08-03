@@ -1,5 +1,5 @@
 install:
-		cd cmd/spvwallet && go install
+		cd cmd/bitcoincash && go install
 
 protos:
 		cd api/pb && protoc --go_out=plugins=grpc:. api.proto
