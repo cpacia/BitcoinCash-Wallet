@@ -872,6 +872,10 @@
             showingSettings = true;
         } else {
             document.getElementById("settings").style.display = 'none';
+            var txArea = document.getElementById("txArea");
+            while (txArea.hasChildNodes()) {
+                txArea.removeChild(txArea.lastChild);
+            }
             astilectron.send({name: "hide"});
             showingSettings = false;
         }
