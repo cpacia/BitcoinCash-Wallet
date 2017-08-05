@@ -261,7 +261,12 @@
         </div>
         <div class="restore-setting">
             <div class="flex restore-margin">
-                <input id="importKey" type="text" placeholder="Enter a private key in hex, wif or BIP38 encrypted key" class="mninput">
+                <div id="invalidKey" class="flex Hidden invalid-field">
+                    <div class="flex">
+                        <div class="caution">⚠ Invalid private key</div>
+                    </div>
+                </div>
+                <input id="importKey" type="text" placeholder="Enter a private key in HEX or WIF" class="mninput">
                 <div class="restorePopup">
                         <span class="restorePopuptext" id="importPopup">
                             <div class="sure">Are you sure?</div>
@@ -365,6 +370,10 @@
                     var spendError = document.getElementById("spendError");
                     document.getElementById("error").innerHTML = "⚠ " + message.payload;
                     spendError.style.display = 'block';
+                    break;
+                case "importError":
+                    var importError = document.getElementById("invalidKey");
+                    importError.style.display = 'block';
                     break;
                 case "transactions":
                     var txArea = document.getElementById("txArea");

@@ -88,7 +88,7 @@ func GetCheckpoint(walletCreationDate time.Time, params *chaincfg.Params) Checkp
 }
 
 func ForkHeight(params *chaincfg.Params) uint32 {
-	switch(params.Name) {
+	switch params.Name {
 	case chaincfg.MainNetParams.Name:
 		return 478559
 	case chaincfg.TestNet3Params.Name:
@@ -99,7 +99,7 @@ func ForkHeight(params *chaincfg.Params) uint32 {
 
 func IsForkBlock(params *chaincfg.Params, header wire.BlockHeader) bool {
 	ckHash := header.BlockHash()
-	switch(params.Name) {
+	switch params.Name {
 	case chaincfg.MainNetParams.Name:
 		return ckHash.IsEqual(BitcoinCashMainnetForkBlock)
 	case chaincfg.TestNet3Params.Name:

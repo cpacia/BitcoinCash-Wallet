@@ -7,10 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/OpenBazaar/jsonpb"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/cpacia/BitcoinCash-Wallet"
 	"github.com/cpacia/BitcoinCash-Wallet/api"
 	"github.com/cpacia/BitcoinCash-Wallet/api/pb"
-	"github.com/btcsuite/btcd/wire"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/jessevdk/go-flags"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -18,8 +19,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"golang.org/x/tools/go/gcimporter15/testdata"
-	"github.com/golang/protobuf/ptypes"
 )
 
 func SetupCli(parser *flags.Parser) {
@@ -1066,6 +1065,6 @@ func (x *ImportKey) Execute(args []string) error {
 	if err != nil {
 		return errors.New("Error parsing creation date")
 	}
-	client.ImportKey(context.Background(), &pb.ImportedKey{args[0], ts})
-	return nil
+	_, err = client.ImportKey(context.Background(), &pb.ImportedKey{args[0], ts})
+	return err
 }

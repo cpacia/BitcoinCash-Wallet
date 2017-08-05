@@ -1,6 +1,7 @@
 package spvwallet
 
 import (
+	"errors"
 	"fmt"
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -10,7 +11,6 @@ import (
 	"sort"
 	"sync"
 	"time"
-	"errors"
 )
 
 // Blockchain settings.  These are kindof Bitcoin specific, but not contained in
@@ -96,7 +96,7 @@ func (b *Blockchain) CommitHeader(header wire.BlockHeader) (bool, *StoredHeader,
 	}
 
 	// Check to make sure we go onto the Bitcoin Cash fork
-	if parentHeader.height + 1 == ForkHeight(b.params) && !IsForkBlock(b.params, header) {
+	if parentHeader.height+1 == ForkHeight(b.params) && !IsForkBlock(b.params, header) {
 		return false, nil, 0, errors.New("Header is not hardcoded fork header")
 	}
 
@@ -207,7 +207,7 @@ func (b *Blockchain) calcRequiredWork(header wire.BlockHeader, height int32, pre
 		// target by 1/4 (which reduces the difficulty by 20%). This ensure the
 		// chain do not get stuck in case we lose hashrate abruptly.
 		if uint32(height) >= ForkHeight(b.params) {
-			pindex6, err := b.GetAncestor(prevHeader, height - 7)
+			pindex6, err := b.GetAncestor(prevHeader, height-7)
 			if err != nil {
 				log.Error(err)
 				return 0, err
@@ -222,7 +222,7 @@ func (b *Blockchain) calcRequiredWork(header wire.BlockHeader, height int32, pre
 				log.Error(err)
 				return 0, err
 			}
-			if pindexPrevMtp.Sub(pindex6Mtp) >= time.Hour * 12 {
+			if pindexPrevMtp.Sub(pindex6Mtp) >= time.Hour*12 {
 				log.Noticef("Adjust difficulty down at height %d", height)
 				nPow := blockchain.CompactToBig(prevHeader.header.Bits)
 				shft := new(big.Int).Rsh(nPow, 2)
@@ -283,7 +283,7 @@ func (b *Blockchain) GetEpoch() (*wire.BlockHeader, error) {
 	return &sh.header, nil
 }
 
-func (b *Blockchain) GetAncestor(prevHeader StoredHeader, height int32) (*StoredHeader, error){
+func (b *Blockchain) GetAncestor(prevHeader StoredHeader, height int32) (*StoredHeader, error) {
 	var err error
 	for {
 		prevHeader, err = b.db.GetPreviousHeader(prevHeader.header)

@@ -3,14 +3,15 @@ package api
 import (
 	"encoding/hex"
 	"errors"
-	"github.com/cpacia/BitcoinCash-Wallet"
-	"github.com/cpacia/BitcoinCash-Wallet/api/pb"
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/cpacia/BitcoinCash-Wallet"
+	"github.com/cpacia/BitcoinCash-Wallet/api/pb"
 	"github.com/golang/protobuf/ptypes"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -641,3 +642,31 @@ func (s *server) ListKeys(ctx context.Context, in *pb.Empty) (*pb.Keys, error) {
 	return &pb.Keys{list}, nil
 }
 
+func (s *server) ImportKey(ctx context.Context, in *pb.ImportedKey) (*pb.Empty, error) {
+	var privKey *btcec.PrivateKey
+	compress := true
+	keyBytes, err := hex.DecodeString(in.Key)
+	if err != nil {
+		wif, err := btcutil.DecodeWIF(in.Key)
+		if err != nil {
+			return nil, err
+		}
+		privKey = wif.PrivKey
+		compress = wif.CompressPubKey
+	} else {
+		if len(keyBytes) != 32 {
+			return nil, errors.New("Hex private keys must be exactly 64 characters")
+		}
+		privKey, _ = btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
+	}
+	err = s.w.ImportKey(privKey, compress)
+	if err != nil {
+		return nil, err
+	}
+	t, err := ptypes.Timestamp(in.CreationDate)
+	if err != nil {
+		return nil, err
+	}
+	s.w.ReSyncBlockchain(t)
+	return &pb.Empty{}, nil
+}

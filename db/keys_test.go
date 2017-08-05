@@ -5,8 +5,8 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
-	"github.com/cpacia/BitcoinCash-Wallet"
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/cpacia/BitcoinCash-Wallet"
 	"sync"
 	"testing"
 )

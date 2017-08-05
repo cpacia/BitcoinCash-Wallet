@@ -3,14 +3,14 @@ package exchangerates
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/OpenBazaar/openbazaar-go/bitcoin/exchange"
 	"golang.org/x/net/proxy"
 	"net"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
-	"fmt"
-	"strconv"
 )
 
 type ExchangeRateProvider struct {

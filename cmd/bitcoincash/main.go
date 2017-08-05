@@ -1,12 +1,14 @@
 package main
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/asticode/go-astilectron"
 	"github.com/asticode/go-astilog"
 	"github.com/atotto/clipboard"
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
 	"github.com/cpacia/BitcoinCash-Wallet"
@@ -31,8 +33,6 @@ import (
 	"path"
 	"strings"
 	"time"
-	"encoding/hex"
-	"github.com/btcsuite/btcd/btcec"
 )
 
 var parser = flags.NewParser(nil, flags.Default)
@@ -461,7 +461,7 @@ func (x *Start) Execute(args []string) error {
 					wallet.ReSyncBlockchain(config.CreationDate)
 				case "importKey":
 					type P struct {
-						Key string `json:"key"`
+						Key  string `json:"key"`
 						Date string `json:"date"`
 					}
 					var p P
@@ -494,7 +494,7 @@ func (x *Start) Execute(args []string) error {
 				case "restore":
 					type P struct {
 						Mnemonic string `json:"mnemonic"`
-						Date string `json:"date"`
+						Date     string `json:"date"`
 					}
 					var p P
 					if err := json.Unmarshal(m.Payload, &p); err != nil {

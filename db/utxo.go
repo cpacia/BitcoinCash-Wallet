@@ -3,9 +3,9 @@ package db
 import (
 	"database/sql"
 	"encoding/hex"
-	"github.com/cpacia/BitcoinCash-Wallet"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/cpacia/BitcoinCash-Wallet"
 	"strconv"
 	"strings"
 	"sync"

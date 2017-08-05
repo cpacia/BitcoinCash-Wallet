@@ -2,6 +2,7 @@ package spvwallet
 
 import (
 	"errors"
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/peer"
@@ -16,7 +17,6 @@ import (
 	"path"
 	"sync"
 	"time"
-	"github.com/btcsuite/btcd/btcec"
 )
 
 type SPVWallet struct {

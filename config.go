@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"time"
 	"runtime"
+	"time"
 )
 
 type Config struct {
