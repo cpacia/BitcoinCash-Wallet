@@ -259,13 +259,13 @@
                 <input type="date" name="walletCreationDate" id="walletCreationDate" class="date-picker">
             </div>
         </div>
-        <div class="restore-setting">
-            <div class="flex restore-margin">
-                <div id="invalidKey" class="flex Hidden invalid-field">
-                    <div class="flex">
-                        <div class="caution">⚠ Invalid private key</div>
-                    </div>
+        <div class="restore-setting" id="importField">
+            <div id="invalidKey" class="flex Hidden">
+                <div class="flex">
+                    <div class="invalidKey">⚠ Invalid private key</div>
                 </div>
+            </div>
+            <div class="flex restore-margin">
                 <input id="importKey" type="text" placeholder="Enter a private key in HEX or WIF" class="mninput">
                 <div class="restorePopup">
                         <span class="restorePopuptext" id="importPopup">
@@ -282,7 +282,7 @@
             </div>
             <div class="flex">
                 <div class="dateInputLabel">Key creation date:</div>
-                <input type="date" name="walletCreationDate" id="keyCreationDate" class="date-picker">
+                <input type="date" name="keyCreationDate" id="keyCreationDate" class="date-picker">
             </div>
         </div>
     </div>
@@ -374,6 +374,8 @@
                 case "importError":
                     var importError = document.getElementById("invalidKey");
                     importError.style.display = 'block';
+                    var outerDiv = document.getElementById("importField");
+                    outerDiv.style.height = "120px";
                     break;
                 case "transactions":
                     var txArea = document.getElementById("txArea");
@@ -862,13 +864,20 @@
 
     function restoreFromSeed() {
         var seed = document.getElementById("restoreMnemonic").value;
-        astilectron.send({name: "restore", payload: seed});
+        dt = document.getElementById("walletCreationDate").value;
+        astilectron.send({name: "restore", payload: {mnemonic: seed, date: dt}});
+        document.getElementById("walletCreationDate").value = "";
         document.getElementById("restoreMnemonic").value = "";
         mnemonic = seed;
         closeRestorePopup()
     }
 
     function importKey() {
+        var outerDiv = document.getElementById("importField");
+        outerDiv.style.height = "50px";
+        var importError = document.getElementById("invalidKey");
+        importError.style.display = 'none';
+
         k = document.getElementById("importKey").value;
         dt = document.getElementById("keyCreationDate").value;
         document.getElementById("importKey").value = "";
@@ -912,6 +921,10 @@
             while (txArea.hasChildNodes()) {
                 txArea.removeChild(txArea.lastChild);
             }
+            var outerDiv = document.getElementById("importField");
+            outerDiv.style.height = "50px";
+            var importError = document.getElementById("invalidKey");
+            importError.style.display = 'none';
             showingTransactions = false;
         }
     }
@@ -929,6 +942,10 @@
             while (txArea.hasChildNodes()) {
                 txArea.removeChild(txArea.lastChild);
             }
+            var outerDiv = document.getElementById("importField");
+            outerDiv.style.height = "50px";
+            var importError = document.getElementById("invalidKey");
+            importError.style.display = 'none';
             astilectron.send({name: "hide"});
             showingSettings = false;
         }

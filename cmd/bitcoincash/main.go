@@ -294,7 +294,7 @@ func (x *Start) Execute(args []string) error {
 	printSplashScreen()
 
 	if x.Gui {
-		//go wallet.Start()
+		go wallet.Start()
 
 		exchangeRates := exchangerates.NewBitcoinCashPriceFetcher(config.Proxy)
 
@@ -476,12 +476,14 @@ func (x *Start) Execute(args []string) error {
 						wif, err := btcutil.DecodeWIF(p.Key)
 						if err != nil {
 							w.Send(bootstrap.MessageOut{Name: "importError", Payload: err.Error()})
+							return
 						}
 						privKey = wif.PrivKey
 						compress = wif.CompressPubKey
 					} else {
 						if len(keyBytes) != 32 {
 							w.Send(bootstrap.MessageOut{Name: "importError", Payload: "Invalid key"})
+							return
 						}
 						privKey, _ = btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
 					}
