@@ -51,7 +51,7 @@ type SPVWallet struct {
 
 var log = logging.MustGetLogger("bitcoin")
 
-const WALLET_VERSION = "0.1.1"
+const WALLET_VERSION = "0.2.0"
 
 func NewSPVWallet(config *Config) (*SPVWallet, error) {
 
