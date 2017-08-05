@@ -182,12 +182,12 @@
         <div id="mnemonic" class="setting">
             <div class="flex checkMargin">
                 <div class="checkLabel">Show mnemonic seed</div>
-                <input type="checkbox" id="mnemonicSwitch" onchange="showMnemonic(this)"/><label for="mnemonicSwitch"></label>
+                <input type="checkbox" id="mnemonicSwitch" onchange="showMnemonic(this)"/><label class="chk" for="mnemonicSwitch"></label>
             </div>
         </div>
         <div class="setting">
             <div class="flex">
-                <div class="resyncLabel">Resync Blockchain</div>
+                <div class="resyncLabel">Resync blockchain</div>
                 <div class="resyncPopup">
                         <span class="resyncPopuptext" id="resyncPopup">
                             <div class="sure">Are you sure?</div>
@@ -238,7 +238,7 @@
                 </div>
             </div>
         </div>
-        <div class="setting">
+        <div class="restore-setting">
             <div class="flex restore-margin">
                 <input id="restoreMnemonic" type="text" placeholder="Enter a twelve word mnemonic seed" class="mninput">
                 <div class="restorePopup">
@@ -253,6 +253,31 @@
                         </span>
                     <button class="RestoreBtn" onclick="askForRestoreConfirmation();">Restore From Seed</button>
                 </div>
+            </div>
+            <div class="flex">
+                <div class="dateInputLabel">Wallet creation date:</div>
+                <input type="date" name="walletCreationDate" id="walletCreationDate" class="date-picker">
+            </div>
+        </div>
+        <div class="restore-setting">
+            <div class="flex restore-margin">
+                <input id="importKey" type="text" placeholder="Enter a private key in hex, wif or BIP38 encrypted key" class="mninput">
+                <div class="restorePopup">
+                        <span class="restorePopuptext" id="importPopup">
+                            <div class="sure">Are you sure?</div>
+                            <div class="restoreWarning">Clicking yes will import the key and resync the blockchain from the creation date.</div>
+                            <div class="separator"></div>
+                            <div class="flex confirmationActions">
+                                <div class="Clear cancelPad" onclick="closeImportPopup();">Cancel</div>
+                                <button class="SendBtn" onclick="importKey()">Yes, Do it</button>
+                            </div>
+                        </span>
+                    <button class="RestoreBtn" onclick="askForImportConfirmation();">Import Key</button>
+                </div>
+            </div>
+            <div class="flex">
+                <div class="dateInputLabel">Key creation date:</div>
+                <input type="date" name="walletCreationDate" id="keyCreationDate" class="date-picker">
             </div>
         </div>
     </div>
@@ -619,6 +644,11 @@
         popup.classList.toggle("show");
     }
 
+    function askForImportConfirmation() {
+        var popup = document.getElementById("importPopup");
+        popup.classList.toggle("show");
+    }
+
     function closePopup() {
         var popup = document.getElementById("confirmationPopup");
         popup.classList.toggle("show");
@@ -641,6 +671,11 @@
 
     function closeProxyPopup() {
         var popup = document.getElementById("proxyPopup");
+        popup.classList.toggle("show");
+    }
+
+    function closeImportPopup() {
+        var popup = document.getElementById("importPopup");
         popup.classList.toggle("show");
     }
 
@@ -822,6 +857,15 @@
         document.getElementById("restoreMnemonic").value = "";
         mnemonic = seed;
         closeRestorePopup()
+    }
+
+    function importKey() {
+        k = document.getElementById("importKey").value;
+        dt = document.getElementById("keyCreationDate").value;
+        document.getElementById("importKey").value = "";
+        document.getElementById("keyCreationDate").value = "";
+        astilectron.send({name: "importKey", payload: {key: k, date: dt}});
+        closeImportPopup();
     }
 
     function showMnemonic(id) {

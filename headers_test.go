@@ -105,7 +105,7 @@ func TestDeserializeHeader(t *testing.T) {
 }
 
 func TestHeaderDB_Put(t *testing.T) {
-	headers := NewHeaderDB("")
+	headers, _ := NewHeaderDB("")
 	// Test put with new tip
 	err := headers.Put(testSh1, true)
 	if err != nil {
@@ -194,7 +194,7 @@ func TestHeaderDB_Put(t *testing.T) {
 }
 
 func TestHeaderDB_GetPreviousHeader(t *testing.T) {
-	headers := NewHeaderDB("")
+	headers, _ := NewHeaderDB("")
 	err := headers.Put(testSh1, false)
 	if err != nil {
 		t.Error(err)
@@ -212,7 +212,7 @@ func TestHeaderDB_GetPreviousHeader(t *testing.T) {
 }
 
 func TestHeaderDB_GetBestHeader(t *testing.T) {
-	headers := NewHeaderDB("")
+	headers, _ := NewHeaderDB("")
 	err := headers.Put(testSh1, false)
 	if err != nil {
 		t.Error(err)
@@ -249,7 +249,7 @@ func TestHeaderDB_GetBestHeader(t *testing.T) {
 }
 
 func TestHeaderDB_Height(t *testing.T) {
-	headers := NewHeaderDB("")
+	headers, _ := NewHeaderDB("")
 	err := headers.Put(testSh1, true)
 	if err != nil {
 		t.Error(err)
@@ -265,7 +265,7 @@ func TestHeaderDB_Height(t *testing.T) {
 }
 
 func TestHeaderDB_Prune(t *testing.T) {
-	headers := NewHeaderDB("")
+	headers, _ := NewHeaderDB("")
 	var toDelete []chainhash.Hash
 	var toStay []chainhash.Hash
 	for i := 0; i < 2500; i++ {
@@ -317,7 +317,7 @@ func TestHeaderDB_Prune(t *testing.T) {
 }
 
 func TestHeaderDB_Print(t *testing.T) {
-	headers := NewHeaderDB("")
+	headers, _ := NewHeaderDB("")
 	// Test put with new tip
 	err := headers.Put(testSh1, true)
 	if err != nil {

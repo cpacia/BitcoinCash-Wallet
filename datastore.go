@@ -83,6 +83,9 @@ type Keys interface {
 	// Get a list of unused key indexes for the given purpose
 	GetUnused(purpose KeyPurpose) ([]int, error)
 
+	// Return all imported keys
+	GetImported() ([]*btcec.PrivateKey, error)
+
 	// Fetch all key paths
 	GetAll() ([]KeyPath, error)
 

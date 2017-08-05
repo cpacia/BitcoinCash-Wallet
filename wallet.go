@@ -193,6 +193,10 @@ func (w *SPVWallet) Mnemonic() string {
 	return w.mnemonic
 }
 
+func (w *SPVWallet) CreationDate() time.Time {
+	return w.creationDate
+}
+
 func (w *SPVWallet) ConnectedPeers() []*peer.Peer {
 	return w.peerManager.ConnectedPeers()
 }
@@ -237,6 +241,16 @@ func (w *SPVWallet) HasKey(addr btc.Address) bool {
 		return false
 	}
 	return true
+}
+
+func (w *SPVWallet) ImportKey(privKey *btcec.PrivateKey) error {
+	pub := privKey.PubKey()
+	pkHash := btc.Hash160(pub.SerializeCompressed())
+	addr, err := btc.NewAddressPubKeyHash(pkHash, w.params)
+	if err != nil {
+		return err
+	}
+	return w.keyManager.datastore.ImportKey(addr.ScriptAddress(), privKey)
 }
 
 func (w *SPVWallet) GetKey(addr btc.Address) (*btcec.PrivateKey, error) {
@@ -373,10 +387,10 @@ func (w *SPVWallet) Close() {
 	}
 }
 
-func (w *SPVWallet) ReSyncBlockchain(fromHeight int32) {
+func (w *SPVWallet) ReSyncBlockchain(fromDate time.Time) {
 	w.Close()
 	os.Remove(path.Join(w.repoPath, "headers.bin"))
-	blockchain, err := NewBlockchain(w.repoPath, w.creationDate, w.params)
+	blockchain, err := NewBlockchain(w.repoPath, fromDate, w.params)
 	if err != nil {
 		return
 	}

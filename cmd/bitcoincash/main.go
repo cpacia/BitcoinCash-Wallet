@@ -31,6 +31,8 @@ import (
 	"path"
 	"strings"
 	"time"
+	"encoding/hex"
+	"github.com/btcsuite/btcd/btcec"
 )
 
 var parser = flags.NewParser(nil, flags.Default)
@@ -268,6 +270,8 @@ func (x *Start) Execute(args []string) error {
 		if err != nil {
 			return errors.New("Wallet creation date timestamp must be in RFC3339 format")
 		}
+	} else {
+		creationDate, _ = sqliteDatastore.GetCreationDate()
 	}
 	config.CreationDate = creationDate
 
@@ -290,7 +294,7 @@ func (x *Start) Execute(args []string) error {
 	printSplashScreen()
 
 	if x.Gui {
-		go wallet.Start()
+		//go wallet.Start()
 
 		exchangeRates := exchangerates.NewBitcoinCashPriceFetcher(config.Proxy)
 
@@ -304,7 +308,8 @@ func (x *Start) Execute(args []string) error {
 
 		txc := make(chan uint32)
 		listener := func(spvwallet.TransactionCallback) {
-			txc <- wallet.ChainTip()
+			h, _ := wallet.ChainTip()
+			txc <- h
 		}
 		wallet.AddTransactionListener(listener)
 
@@ -360,7 +365,7 @@ func (x *Start) Execute(args []string) error {
 					}
 					btcVal := float64(confirmed) / 100000000
 					fiatVal := float64(btcVal) * rate
-					height := wallet.ChainTip()
+					height, _ := wallet.ChainTip()
 
 					st := Stats{
 						Confirmed:    confirmed,
@@ -453,27 +458,66 @@ func (x *Start) Execute(args []string) error {
 					}
 					open.Run(url)
 				case "resync":
-					wallet.ReSyncBlockchain(0)
-				case "restore":
-					var mnemonic string
-					if err := json.Unmarshal(m.Payload, &mnemonic); err != nil {
+					wallet.ReSyncBlockchain(config.CreationDate)
+				case "importKey":
+					type P struct {
+						Key string `json:"key"`
+						Date string `json:"date"`
+					}
+					var p P
+					if err := json.Unmarshal(m.Payload, &p); err != nil {
 						astilog.Errorf("Unmarshaling %s failed", m.Payload)
 						return
 					}
+					var privKey *btcec.PrivateKey
+					keyBytes, err := hex.DecodeString(p.Key)
+					if err != nil {
+						wif, err := btcutil.DecodeWIF(p.Key)
+						if err != nil {
+							w.Send(bootstrap.MessageOut{Name: "importError", Payload: err.Error()})
+						}
+						privKey = wif.PrivKey
+					} else {
+						if len(keyBytes) != 32 {
+							w.Send(bootstrap.MessageOut{Name: "importError", Payload: "Invalid key"})
+						}
+						privKey, _ = btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
+					}
+					wallet.ImportKey(privKey)
+					var t time.Time
+					if p.Date != "" {
+						t, _ = time.Parse("2006-01-2", p.Date)
+					}
+					wallet.ReSyncBlockchain(t)
+				case "restore":
+					type P struct {
+						Mnemonic string `json:"mnemonic"`
+						Date string `json:"date"`
+					}
+					var p P
+					if err := json.Unmarshal(m.Payload, &p); err != nil {
+						astilog.Errorf("Unmarshaling %s failed", m.Payload)
+						return
+					}
+					var t time.Time
+					if p.Date != "" {
+						t, _ = time.Parse("2006-01-2", p.Date)
+					}
+
 					wallet.Close()
 					os.Remove(path.Join(config.RepoPath, "wallet.db"))
 					os.Remove(path.Join(config.RepoPath, "headers.bin"))
 					sqliteDatastore, _ := db.Create(config.RepoPath)
 					config.DB = sqliteDatastore
-					config.Mnemonic = mnemonic
-					config.CreationDate = time.Time{}
+					config.Mnemonic = p.Mnemonic
+					config.CreationDate = t
 					wallet, err = spvwallet.NewSPVWallet(config)
 					if err != nil {
 						astilog.Errorf("Unmarshaling %s failed", m.Payload)
 						return
 					}
-					sqliteDatastore.SetMnemonic(mnemonic)
-					sqliteDatastore.SetCreationDate(time.Time{})
+					sqliteDatastore.SetMnemonic(p.Mnemonic)
+					sqliteDatastore.SetCreationDate(t)
 					go wallet.Start()
 				case "minimize":
 					go func() {

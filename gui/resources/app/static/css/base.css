@@ -906,3 +906,45 @@ label:active:after {
     color: #ffffff;
     cursor: pointer;
 }
+
+.restore-setting {
+    width: 97%;
+    height: 100px;
+    background-color: #ffffff;
+    border: solid 1px #dbdbdb;
+    margin-top: -2px;
+    padding-left: 12px;
+    margin-left: -1px;
+}
+
+[type="date"] {
+    background:#fff url(https://cdn1.iconfinder.com/data/icons/cc_mono_icon_set/blacks/16x16/calendar_2.png)  97% 50% no-repeat ;
+}
+[type="date"]::-webkit-inner-spin-button {
+    display: none;
+}
+[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+}
+
+.date-picker {
+    border: 1px solid #c4c4c4;
+    font-family: "noto_sans";
+    font-size: 12.6px;
+    background-color: #fff;
+    padding: 3px 5px;
+    width: 190px;
+    height: 30px;
+    margin-top: 5px;
+}
+
+.dateInputLabel{
+    width: 200px;
+    height: 100%;
+    line-height: 3.7;
+    text-align: left;
+    padding-left: 15px;
+    font-family: "noto_sans";
+    font-size: 14px;
+    color: #252525;
+}

@@ -71,7 +71,8 @@ func (s *server) NewAddress(ctx context.Context, in *pb.KeySelection) (*pb.Addre
 }
 
 func (s *server) ChainTip(ctx context.Context, in *pb.Empty) (*pb.Height, error) {
-	return &pb.Height{s.w.ChainTip()}, nil
+	h, _ := s.w.ChainTip()
+	return &pb.Height{h}, nil
 }
 
 func (s *server) Balance(ctx context.Context, in *pb.Empty) (*pb.Balances, error) {
@@ -387,7 +388,7 @@ func (s *server) SweepAddress(ctx context.Context, in *pb.SweepInfo) (*pb.Txid, 
 }
 
 func (s *server) ReSyncBlockchain(ctx context.Context, in *pb.Height) (*pb.Empty, error) {
-	s.w.ReSyncBlockchain(int32(in.Height))
+	s.w.ReSyncBlockchain(s.w.CreationDate())
 	return nil, nil
 }
 

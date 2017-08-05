@@ -63,6 +63,16 @@ func (m *mockKeyStore) ImportKey(scriptAddress []byte, key *btcec.PrivateKey) er
 	return nil
 }
 
+func (m *mockKeyStore) GetImported() ([]*btcec.PrivateKey, error) {
+	var keys []*btcec.PrivateKey
+	for _, key := range m.keys {
+		if key.path.Index == -1 {
+			keys = append(keys, key.key)
+		}
+	}
+	return keys, nil
+}
+
 func (m *mockKeyStore) MarkKeyAsUsed(scriptAddress []byte) error {
 	key, ok := m.keys[hex.EncodeToString(scriptAddress)]
 	if !ok {
