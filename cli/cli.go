@@ -18,6 +18,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"golang.org/x/tools/go/gcimporter15/testdata"
+	"github.com/golang/protobuf/ptypes"
 )
 
 func SetupCli(parser *flags.Parser) {
@@ -79,6 +81,15 @@ func SetupCli(parser *flags.Parser) {
 			"> spvwallet haskey 1DxGWC22a46VPEjq8YKoeVXSLzB7BA8sJS\n"+
 			"true\n",
 		&hasKey)
+	parser.AddCommand("importkey",
+		"import a private key",
+		"Imports a private key and resyncs from the creation date\n\n"+
+			"Args:\n"+
+			"1. key          (string) A hex, wif, or BIP38 encoded private key\n\n"+
+			"2. creationdate (string, optinal) The date the key was created. Format YYYY-MM-DD."+
+			"Examples:\n"+
+			"> spvwallet importkey KyhgBE8RtdR7kq9D8T4bNGS4CDzBq6UY8nSb5X9zsKTN7zrfiu2F 2012-02-23\n",
+		&importKey)
 	parser.AddCommand("getkey",
 		"get a private key",
 		"Return the private key for the given address",
@@ -1028,5 +1039,33 @@ func (x *ListKeys) Execute(args []string) error {
 	for _, key := range resp.Keys {
 		fmt.Println(key.Key)
 	}
+	return nil
+}
+
+type ImportKey struct{}
+
+var importKey ImportKey
+
+func (x *ImportKey) Execute(args []string) error {
+	if len(args) <= 0 {
+		return errors.New("A private key is required")
+	}
+	client, conn, err := newGRPCClient()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	var t time.Time
+	if len(args) > 1 && args[1] != "" {
+		t, err = time.Parse("2006-01-2", args[1])
+		if err != nil {
+			return errors.New("Error parsing creation date")
+		}
+	}
+	ts, err := ptypes.TimestampProto(t)
+	if err != nil {
+		return errors.New("Error parsing creation date")
+	}
+	client.ImportKey(context.Background(), &pb.ImportedKey{args[0], ts})
 	return nil
 }

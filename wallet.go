@@ -243,9 +243,15 @@ func (w *SPVWallet) HasKey(addr btc.Address) bool {
 	return true
 }
 
-func (w *SPVWallet) ImportKey(privKey *btcec.PrivateKey) error {
+func (w *SPVWallet) ImportKey(privKey *btcec.PrivateKey, compress bool) error {
 	pub := privKey.PubKey()
-	pkHash := btc.Hash160(pub.SerializeCompressed())
+	var pubKeyBytes []byte
+	if compress {
+		pubKeyBytes = pub.SerializeCompressed()
+	} else {
+		pubKeyBytes = pub.SerializeUncompressed()
+	}
+	pkHash := btc.Hash160(pubKeyBytes)
 	addr, err := btc.NewAddressPubKeyHash(pkHash, w.params)
 	if err != nil {
 		return err

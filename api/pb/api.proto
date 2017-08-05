@@ -30,6 +30,7 @@ service API {
   rpc GetKey (Address) returns (Key) {}
   rpc ListKeys (Empty) returns (Keys) {}
   rpc ListAddresses (Empty) returns (Addresses) {}
+  rpc ImportKey (ImportedKey) returns (Empty) {}
   rpc WalletNotify (Empty) returns (stream Tx) {}
   rpc DumpHeaders (Empty) returns (stream Header) {}
 }
@@ -203,4 +204,9 @@ message EstimateFeeData {
 
 message Header {
     string entry = 1;
+}
+
+message ImportedKey {
+    string key                             = 1;
+    google.protobuf.Timestamp creationDate = 2;
 }

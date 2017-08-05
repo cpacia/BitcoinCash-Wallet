@@ -470,6 +470,7 @@ func (x *Start) Execute(args []string) error {
 						return
 					}
 					var privKey *btcec.PrivateKey
+					compress := true
 					keyBytes, err := hex.DecodeString(p.Key)
 					if err != nil {
 						wif, err := btcutil.DecodeWIF(p.Key)
@@ -477,13 +478,14 @@ func (x *Start) Execute(args []string) error {
 							w.Send(bootstrap.MessageOut{Name: "importError", Payload: err.Error()})
 						}
 						privKey = wif.PrivKey
+						compress = wif.CompressPubKey
 					} else {
 						if len(keyBytes) != 32 {
 							w.Send(bootstrap.MessageOut{Name: "importError", Payload: "Invalid key"})
 						}
 						privKey, _ = btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
 					}
-					wallet.ImportKey(privKey)
+					wallet.ImportKey(privKey, compress)
 					var t time.Time
 					if p.Date != "" {
 						t, _ = time.Parse("2006-01-2", p.Date)
