@@ -85,7 +85,7 @@ func SetupCli(parser *flags.Parser) {
 		"Imports a private key and resyncs from the creation date\n\n"+
 			"Args:\n"+
 			"1. key          (string) A hex, wif, or BIP38 encoded private key\n\n"+
-			"2. creationdate (string, optinal) The date the key was created. Format YYYY-MM-DD."+
+			"2. creationdate (string, optinal) The date the key was created. Format YYYY-MM-DD.\n\n"+
 			"Examples:\n"+
 			"> spvwallet importkey KyhgBE8RtdR7kq9D8T4bNGS4CDzBq6UY8nSb5X9zsKTN7zrfiu2F 2012-02-23\n",
 		&importKey)
