@@ -563,7 +563,6 @@ func (w *SPVWallet) buildTx(amount int64, addr btc.Address, feeLevel FeeLevel, o
 			total += c.Value()
 			outpoint := wire.NewOutPoint(c.Hash(), c.Index())
 			in := wire.NewTxIn(outpoint, []byte{}, [][]byte{})
-			in.Sequence = 0 // Opt-in RBF so we can bump fees
 			inputs = append(inputs, in)
 			additionalPrevScripts[*outpoint] = c.PkScript()
 			key := coinMap[c]
