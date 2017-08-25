@@ -171,9 +171,9 @@ func (w *SPVWallet) Start() {
 
 func (w *SPVWallet) CurrencyCode() string {
 	if w.params.Name == chaincfg.MainNetParams.Name {
-		return "btc"
+		return "bch"
 	} else {
-		return "tbtc"
+		return "tbch"
 	}
 }
 

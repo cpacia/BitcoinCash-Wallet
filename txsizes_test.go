@@ -76,7 +76,7 @@ func TestSumOutputSerializeSizes(t *testing.T) {
 	}
 	r := bytes.NewReader(txBytes)
 	msgTx := wire.NewMsgTx(1)
-	msgTx.BtcDecode(r, 1)
+	msgTx.BtcDecode(r, 1, wire.BaseEncoding)
 	if SumOutputSerializeSizes(msgTx.TxOut) != 68 {
 		t.Error("SumOutputSerializeSizes returned incorrect value")
 	}

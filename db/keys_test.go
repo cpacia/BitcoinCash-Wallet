@@ -64,7 +64,7 @@ func TestPutKey(t *testing.T) {
 		t.Errorf(`Expected 0 got %d`, index)
 	}
 	if used != 0 {
-		t.Errorf(`Expected 0 got %s`, used)
+		t.Errorf(`Expected 0 got %d`, used)
 	}
 }
 
@@ -98,8 +98,8 @@ func TestImportKey(t *testing.T) {
 	if purpose != -1 {
 		t.Errorf(`Expected -1 got %d`, purpose)
 	}
-	if used != 0 {
-		t.Errorf(`Expected 0 got %s`, used)
+	if used != 1 {
+		t.Errorf(`Expected 1 got %d`, used)
 	}
 	keyBytes, err := hex.DecodeString(keyHex)
 	if err != nil {
@@ -108,6 +108,7 @@ func TestImportKey(t *testing.T) {
 	if !bytes.Equal(key.Serialize(), keyBytes) {
 		t.Errorf(`Expected %s got %s`, hex.EncodeToString(b), hex.EncodeToString(keyBytes))
 	}
+	kdb.db.Exec("delete from keys where scriptAddress=?", hex.EncodeToString(b))
 }
 
 func TestKeysDB_GetImported(t *testing.T) {

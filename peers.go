@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"github.com/cpacia/bchutil"
 )
 
 var (
@@ -223,7 +224,7 @@ func (pm *PeerManager) onVerack(p *peer.Peer, msg *wire.MsgVerAck) {
 	p.NA().Services = p.Services()
 	if !(p.NA().HasService(wire.SFNodeBloom) &&
 		p.NA().HasService(wire.SFNodeNetwork) &&
-		p.NA().HasService(wire.SFNodeBitcoinCash)) {
+		p.NA().HasService(bchutil.SFNodeBitcoinCash)) {
 		pm.peerMutex.Lock()
 		for id, peer := range pm.connectedPeers {
 			if peer.ID() == p.ID() {
@@ -357,7 +358,7 @@ func (pm *PeerManager) getNewAddress() (net.Addr, error) {
 // Query the DNS seeds and pass the addresses into the address manager.
 func (pm *PeerManager) queryDNSSeeds() {
 	wg := new(sync.WaitGroup)
-	for _, seed := range pm.peerConfig.ChainParams.DNSSeeds {
+	for _, seed := range bchutil.GetDNSSeed(pm.peerConfig.ChainParams) {
 		wg.Add(1)
 		go func(host string) {
 			returnedAddresses := 0
