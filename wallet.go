@@ -1,4 +1,4 @@
-package spvwallet
+package bitcoincash
 
 import (
 	"errors"
@@ -17,6 +17,7 @@ import (
 	"path"
 	"sync"
 	"time"
+	"github.com/OpenBazaar/spvwallet"
 )
 
 type SPVWallet struct {
@@ -201,13 +202,13 @@ func (w *SPVWallet) ConnectedPeers() []*peer.Peer {
 	return w.peerManager.ConnectedPeers()
 }
 
-func (w *SPVWallet) CurrentAddress(purpose KeyPurpose) btc.Address {
+func (w *SPVWallet) CurrentAddress(purpose spvwallet.KeyPurpose) btc.Address {
 	key, _ := w.keyManager.GetCurrentKey(purpose)
 	addr, _ := key.Address(w.params)
 	return btc.Address(addr)
 }
 
-func (w *SPVWallet) NewAddress(purpose KeyPurpose) btc.Address {
+func (w *SPVWallet) NewAddress(purpose spvwallet.KeyPurpose) btc.Address {
 	i, _ := w.txstore.Keys().GetUnused(purpose)
 	key, _ := w.keyManager.generateChildKey(purpose, uint32(i[1]))
 	addr, _ := key.Address(w.params)
@@ -358,7 +359,7 @@ func (w *SPVWallet) Params() *chaincfg.Params {
 	return w.params
 }
 
-func (w *SPVWallet) AddTransactionListener(callback func(TransactionCallback)) {
+func (w *SPVWallet) AddTransactionListener(callback func(spvwallet.TransactionCallback)) {
 	w.txstore.listeners = append(w.txstore.listeners, callback)
 }
 

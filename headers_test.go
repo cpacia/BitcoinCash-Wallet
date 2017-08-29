@@ -1,4 +1,4 @@
-package spvwallet
+package bitcoincash
 
 import (
 	"bytes"

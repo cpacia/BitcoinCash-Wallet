@@ -1,4 +1,4 @@
-package spvwallet
+package bitcoincash
 
 import (
 	"bytes"
@@ -11,6 +11,7 @@ import (
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"testing"
 	"time"
+	"github.com/OpenBazaar/spvwallet"
 )
 
 func createTxStore() (*TxStore, error) {
@@ -578,7 +579,7 @@ func TestTxStore_Ingest(t *testing.T) {
 	}
 
 	// Ingest output hit
-	key, err := txStore.keyManager.GetCurrentKey(EXTERNAL)
+	key, err := txStore.keyManager.GetCurrentKey(spvwallet.EXTERNAL)
 	if err != nil {
 		t.Error(err)
 	}

@@ -6,9 +6,10 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/cpacia/BitcoinCash-Wallet"
 	"sync"
 	"testing"
+	"github.com/OpenBazaar/spvwallet"
+	bc "github.com/cpacia/BitcoinCash-Wallet"
 )
 
 var kdb KeysDB
@@ -26,7 +27,7 @@ func TestGetAll(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		b := make([]byte, 32)
 		rand.Read(b)
-		err := kdb.Put(b, spvwallet.KeyPath{spvwallet.EXTERNAL, i})
+		err := kdb.Put(b, bc.KeyPath{spvwallet.EXTERNAL, i})
 		if err != nil {
 			t.Error(err)
 		}
@@ -39,7 +40,7 @@ func TestGetAll(t *testing.T) {
 
 func TestPutKey(t *testing.T) {
 	b := make([]byte, 32)
-	err := kdb.Put(b, spvwallet.KeyPath{spvwallet.EXTERNAL, 0})
+	err := kdb.Put(b, bc.KeyPath{spvwallet.EXTERNAL, 0})
 	if err != nil {
 		t.Error(err)
 	}
@@ -135,8 +136,8 @@ func TestKeysDB_GetImported(t *testing.T) {
 
 func TestPutDuplicateKey(t *testing.T) {
 	b := make([]byte, 32)
-	kdb.Put(b, spvwallet.KeyPath{spvwallet.EXTERNAL, 0})
-	err := kdb.Put(b, spvwallet.KeyPath{spvwallet.EXTERNAL, 0})
+	kdb.Put(b, bc.KeyPath{spvwallet.EXTERNAL, 0})
+	err := kdb.Put(b, bc.KeyPath{spvwallet.EXTERNAL, 0})
 	if err == nil {
 		t.Error("Expected duplicate key error")
 	}
@@ -144,7 +145,7 @@ func TestPutDuplicateKey(t *testing.T) {
 
 func TestMarkKeyAsUsed(t *testing.T) {
 	b := make([]byte, 33)
-	err := kdb.Put(b, spvwallet.KeyPath{spvwallet.EXTERNAL, 0})
+	err := kdb.Put(b, bc.KeyPath{spvwallet.EXTERNAL, 0})
 	if err != nil {
 		t.Error(err)
 	}
@@ -173,7 +174,7 @@ func TestGetLastKeyIndex(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		b := make([]byte, 32)
 		rand.Read(b)
-		err := kdb.Put(b, spvwallet.KeyPath{spvwallet.EXTERNAL, i})
+		err := kdb.Put(b, bc.KeyPath{spvwallet.EXTERNAL, i})
 		if err != nil {
 			t.Error(err)
 		}
@@ -193,7 +194,7 @@ func TestGetLastKeyIndex(t *testing.T) {
 func TestGetPathForKey(t *testing.T) {
 	b := make([]byte, 32)
 	rand.Read(b)
-	err := kdb.Put(b, spvwallet.KeyPath{spvwallet.EXTERNAL, 15})
+	err := kdb.Put(b, bc.KeyPath{spvwallet.EXTERNAL, 15})
 	if err != nil {
 		t.Error(err)
 	}
@@ -241,7 +242,7 @@ func TestGetUnsed(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		b := make([]byte, 32)
 		rand.Read(b)
-		err := kdb.Put(b, spvwallet.KeyPath{spvwallet.INTERNAL, i})
+		err := kdb.Put(b, bc.KeyPath{spvwallet.INTERNAL, i})
 		if err != nil {
 			t.Error(err)
 		}
@@ -259,7 +260,7 @@ func TestGetLookaheadWindows(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		b := make([]byte, 32)
 		rand.Read(b)
-		err := kdb.Put(b, spvwallet.KeyPath{spvwallet.EXTERNAL, i})
+		err := kdb.Put(b, bc.KeyPath{spvwallet.EXTERNAL, i})
 		if err != nil {
 			t.Error(err)
 		}
@@ -268,7 +269,7 @@ func TestGetLookaheadWindows(t *testing.T) {
 		}
 		b = make([]byte, 32)
 		rand.Read(b)
-		err = kdb.Put(b, spvwallet.KeyPath{spvwallet.INTERNAL, i})
+		err = kdb.Put(b, bc.KeyPath{spvwallet.INTERNAL, i})
 		if err != nil {
 			t.Error(err)
 		}

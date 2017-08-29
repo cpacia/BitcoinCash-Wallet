@@ -18,15 +18,16 @@ import (
 	"google.golang.org/grpc/reflection"
 	"net"
 	"sync"
+	"github.com/OpenBazaar/spvwallet"
 )
 
 const Addr = "127.0.0.1:8234"
 
 type server struct {
-	w *spvwallet.SPVWallet
+	w *bitcoincash.SPVWallet
 }
 
-func ServeAPI(w *spvwallet.SPVWallet) error {
+func ServeAPI(w *bitcoincash.SPVWallet) error {
 	lis, err := net.Listen("tcp", Addr)
 	if err != nil {
 		return err
@@ -299,14 +300,14 @@ func (s *server) GetConfirmations(ctx context.Context, in *pb.Txid) (*pb.Confirm
 }
 
 func (s *server) SweepAddress(ctx context.Context, in *pb.SweepInfo) (*pb.Txid, error) {
-	var utxos []spvwallet.Utxo
+	var utxos []bitcoincash.Utxo
 	for _, u := range in.Utxos {
 		h, err := chainhash.NewHashFromStr(u.Txid)
 		if err != nil {
 			return nil, err
 		}
 		op := wire.NewOutPoint(h, u.Index)
-		utxo := spvwallet.Utxo{
+		utxo := bitcoincash.Utxo{
 			Op:    *op,
 			Value: int64(u.Value),
 		}

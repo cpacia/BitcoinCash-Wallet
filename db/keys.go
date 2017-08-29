@@ -6,10 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/cpacia/BitcoinCash-Wallet"
 	"math/rand"
 	"strconv"
 	"sync"
+	bc "github.com/cpacia/BitcoinCash-Wallet"
+	"github.com/OpenBazaar/spvwallet"
 )
 
 type KeysDB struct {
@@ -17,7 +18,7 @@ type KeysDB struct {
 	lock *sync.RWMutex
 }
 
-func (k *KeysDB) Put(scriptAddress []byte, keyPath spvwallet.KeyPath) error {
+func (k *KeysDB) Put(scriptAddress []byte, keyPath bc.KeyPath) error {
 	k.lock.Lock()
 	defer k.lock.Unlock()
 	tx, err := k.db.Begin()
@@ -98,7 +99,7 @@ func (k *KeysDB) GetLastKeyIndex(purpose spvwallet.KeyPurpose) (int, bool, error
 	return index, used, nil
 }
 
-func (k *KeysDB) GetPathForKey(scriptAddress []byte) (spvwallet.KeyPath, error) {
+func (k *KeysDB) GetPathForKey(scriptAddress []byte) (bc.KeyPath, error) {
 	k.lock.RLock()
 	defer k.lock.RUnlock()
 
@@ -108,9 +109,9 @@ func (k *KeysDB) GetPathForKey(scriptAddress []byte) (spvwallet.KeyPath, error) 
 	var index int
 	err = stmt.QueryRow(hex.EncodeToString(scriptAddress)).Scan(&purpose, &index)
 	if err != nil {
-		return spvwallet.KeyPath{}, errors.New("Key not found")
+		return bc.KeyPath{}, errors.New("Key not found")
 	}
-	p := spvwallet.KeyPath{
+	p := bc.KeyPath{
 		Purpose: spvwallet.KeyPurpose(purpose),
 		Index:   index,
 	}
@@ -183,10 +184,10 @@ func (k *KeysDB) GetImported() ([]*btcec.PrivateKey, error) {
 	return ret, nil
 }
 
-func (k *KeysDB) GetAll() ([]spvwallet.KeyPath, error) {
+func (k *KeysDB) GetAll() ([]bc.KeyPath, error) {
 	k.lock.RLock()
 	defer k.lock.RUnlock()
-	var ret []spvwallet.KeyPath
+	var ret []bc.KeyPath
 	stm := "select purpose, keyIndex from keys"
 	rows, err := k.db.Query(stm)
 	defer rows.Close()
@@ -200,7 +201,7 @@ func (k *KeysDB) GetAll() ([]spvwallet.KeyPath, error) {
 		if err := rows.Scan(&purpose, &index); err != nil {
 			fmt.Println(err)
 		}
-		p := spvwallet.KeyPath{
+		p := bc.KeyPath{
 			Purpose: spvwallet.KeyPurpose(purpose),
 			Index:   index,
 		}

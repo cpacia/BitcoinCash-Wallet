@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/cpacia/BitcoinCash-Wallet"
+	bc "github.com/cpacia/BitcoinCash-Wallet"
 	"sync"
 	"time"
 )
@@ -43,10 +43,10 @@ func (t *TxnsDB) Put(txn *wire.MsgTx, value, height int, timestamp time.Time, wa
 	return nil
 }
 
-func (t *TxnsDB) Get(txid chainhash.Hash) (*wire.MsgTx, spvwallet.Txn, error) {
+func (t *TxnsDB) Get(txid chainhash.Hash) (*wire.MsgTx, bc.Txn, error) {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
-	var txn spvwallet.Txn
+	var txn bc.Txn
 	stmt, err := t.db.Prepare("select tx, value, height, timestamp, watchOnly from txns where txid=?")
 	if err != nil {
 		return nil, txn, err
@@ -68,7 +68,7 @@ func (t *TxnsDB) Get(txid chainhash.Hash) (*wire.MsgTx, spvwallet.Txn, error) {
 	if watchOnlyInt > 0 {
 		watchOnly = true
 	}
-	txn = spvwallet.Txn{
+	txn = bc.Txn{
 		Txid:      msgTx.TxHash().String(),
 		Value:     int64(value),
 		Height:    int32(height),
@@ -78,10 +78,10 @@ func (t *TxnsDB) Get(txid chainhash.Hash) (*wire.MsgTx, spvwallet.Txn, error) {
 	return msgTx, txn, nil
 }
 
-func (t *TxnsDB) GetAll(includeWatchOnly bool) ([]spvwallet.Txn, error) {
+func (t *TxnsDB) GetAll(includeWatchOnly bool) ([]bc.Txn, error) {
 	t.lock.RLock()
 	defer t.lock.RUnlock()
-	var ret []spvwallet.Txn
+	var ret []bc.Txn
 	stm := "select tx, value, height, timestamp, watchOnly from txns"
 	rows, err := t.db.Query(stm)
 	if err != nil {
@@ -108,7 +108,7 @@ func (t *TxnsDB) GetAll(includeWatchOnly bool) ([]spvwallet.Txn, error) {
 			watchOnly = true
 		}
 
-		txn := spvwallet.Txn{msgTx.TxHash().String(), int64(value), int32(height), time.Unix(int64(timestamp), 0), watchOnly, tx}
+		txn := bc.Txn{msgTx.TxHash().String(), int64(value), int32(height), time.Unix(int64(timestamp), 0), watchOnly, tx}
 		ret = append(ret, txn)
 	}
 	return ret, nil

@@ -1,4 +1,4 @@
-package spvwallet
+package bitcoincash
 
 import (
 	"bytes"
@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"testing"
 	"time"
+	"github.com/OpenBazaar/spvwallet"
 )
 
 type MockDatastore struct {
@@ -58,7 +59,7 @@ func (m *mockKeyStore) Put(scriptAddress []byte, keyPath KeyPath) error {
 }
 
 func (m *mockKeyStore) ImportKey(scriptAddress []byte, key *btcec.PrivateKey) error {
-	kp := KeyPath{Purpose: EXTERNAL, Index: -1}
+	kp := KeyPath{Purpose: spvwallet.EXTERNAL, Index: -1}
 	m.keys[hex.EncodeToString(scriptAddress)] = &keyStoreEntry{scriptAddress, kp, false, key}
 	return nil
 }
@@ -82,7 +83,7 @@ func (m *mockKeyStore) MarkKeyAsUsed(scriptAddress []byte) error {
 	return nil
 }
 
-func (m *mockKeyStore) GetLastKeyIndex(purpose KeyPurpose) (int, bool, error) {
+func (m *mockKeyStore) GetLastKeyIndex(purpose spvwallet.KeyPurpose) (int, bool, error) {
 	i := -1
 	used := false
 	for _, key := range m.keys {
@@ -114,7 +115,7 @@ func (m *mockKeyStore) GetKey(scriptAddress []byte) (*btcec.PrivateKey, error) {
 	return nil, errors.New("Not found")
 }
 
-func (m *mockKeyStore) GetUnused(purpose KeyPurpose) ([]int, error) {
+func (m *mockKeyStore) GetUnused(purpose spvwallet.KeyPurpose) ([]int, error) {
 	var i []int
 	for _, key := range m.keys {
 		if !key.used && key.path.Purpose == purpose {
@@ -133,30 +134,30 @@ func (m *mockKeyStore) GetAll() ([]KeyPath, error) {
 	return kp, nil
 }
 
-func (m *mockKeyStore) GetLookaheadWindows() map[KeyPurpose]int {
+func (m *mockKeyStore) GetLookaheadWindows() map[spvwallet.KeyPurpose]int {
 	internalLastUsed := -1
 	externalLastUsed := -1
 	for _, key := range m.keys {
-		if key.path.Purpose == INTERNAL && key.used && key.path.Index > internalLastUsed {
+		if key.path.Purpose == spvwallet.INTERNAL && key.used && key.path.Index > internalLastUsed {
 			internalLastUsed = key.path.Index
 		}
-		if key.path.Purpose == EXTERNAL && key.used && key.path.Index > externalLastUsed {
+		if key.path.Purpose == spvwallet.EXTERNAL && key.used && key.path.Index > externalLastUsed {
 			externalLastUsed = key.path.Index
 		}
 	}
 	internalUnused := 0
 	externalUnused := 0
 	for _, key := range m.keys {
-		if key.path.Purpose == INTERNAL && !key.used && key.path.Index > internalLastUsed {
+		if key.path.Purpose == spvwallet.INTERNAL && !key.used && key.path.Index > internalLastUsed {
 			internalUnused++
 		}
-		if key.path.Purpose == EXTERNAL && !key.used && key.path.Index > externalLastUsed {
+		if key.path.Purpose == spvwallet.EXTERNAL && !key.used && key.path.Index > externalLastUsed {
 			externalUnused++
 		}
 	}
-	mp := make(map[KeyPurpose]int)
-	mp[INTERNAL] = internalUnused
-	mp[EXTERNAL] = externalUnused
+	mp := make(map[spvwallet.KeyPurpose]int)
+	mp[spvwallet.INTERNAL] = internalUnused
+	mp[spvwallet.EXTERNAL] = externalUnused
 	return mp
 }
 

@@ -5,10 +5,10 @@ import (
 	"encoding/hex"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/cpacia/BitcoinCash-Wallet"
 	"strconv"
 	"strings"
 	"sync"
+	bc "github.com/cpacia/BitcoinCash-Wallet"
 )
 
 type StxoDB struct {
@@ -16,7 +16,7 @@ type StxoDB struct {
 	lock *sync.RWMutex
 }
 
-func (s *StxoDB) Put(stxo spvwallet.Stxo) error {
+func (s *StxoDB) Put(stxo bc.Stxo) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	tx, _ := s.db.Begin()
@@ -40,10 +40,10 @@ func (s *StxoDB) Put(stxo spvwallet.Stxo) error {
 	return nil
 }
 
-func (s *StxoDB) GetAll() ([]spvwallet.Stxo, error) {
+func (s *StxoDB) GetAll() ([]bc.Stxo, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
-	var ret []spvwallet.Stxo
+	var ret []bc.Stxo
 	stm := "select outpoint, value, height, scriptPubKey, watchOnly, spendHeight, spendTxid from stxos"
 	rows, err := s.db.Query(stm)
 	defer rows.Close()
@@ -85,14 +85,14 @@ func (s *StxoDB) GetAll() ([]spvwallet.Stxo, error) {
 		if err != nil {
 			continue
 		}
-		utxo := spvwallet.Utxo{
+		utxo := bc.Utxo{
 			Op:           *wire.NewOutPoint(shaHash, uint32(index)),
 			AtHeight:     int32(height),
 			Value:        int64(value),
 			ScriptPubkey: scriptBytes,
 			WatchOnly:    watchOnly,
 		}
-		ret = append(ret, spvwallet.Stxo{
+		ret = append(ret, bc.Stxo{
 			Utxo:        utxo,
 			SpendHeight: int32(spendHeight),
 			SpendTxid:   *spentHash,
@@ -101,7 +101,7 @@ func (s *StxoDB) GetAll() ([]spvwallet.Stxo, error) {
 	return ret, nil
 }
 
-func (s *StxoDB) Delete(stxo spvwallet.Stxo) error {
+func (s *StxoDB) Delete(stxo bc.Stxo) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	outpoint := stxo.Utxo.Op.Hash.String() + ":" + strconv.Itoa(int(stxo.Utxo.Op.Index))

@@ -11,7 +11,7 @@ import (
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcutil"
-	"github.com/cpacia/BitcoinCash-Wallet"
+	bc "github.com/cpacia/BitcoinCash-Wallet"
 	"github.com/cpacia/BitcoinCash-Wallet/api"
 	"github.com/cpacia/BitcoinCash-Wallet/cli"
 	"github.com/cpacia/BitcoinCash-Wallet/db"
@@ -33,6 +33,7 @@ import (
 	"path"
 	"strings"
 	"time"
+	"github.com/OpenBazaar/spvwallet"
 )
 
 var parser = flags.NewParser(nil, flags.Default)
@@ -56,14 +57,14 @@ type Version struct{}
 
 var start Start
 var version Version
-var wallet *spvwallet.SPVWallet
+var wallet *bc.SPVWallet
 
 func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for range c {
-			fmt.Println("SPVWallet shutting down...")
+			fmt.Println("BitcoinCash wallet shutting down...")
 			wallet.Close()
 			os.Exit(1)
 		}
@@ -88,14 +89,14 @@ func main() {
 }
 
 func (x *Version) Execute(args []string) error {
-	fmt.Println(spvwallet.WALLET_VERSION)
+	fmt.Println(bc.WALLET_VERSION)
 	return nil
 }
 
 func (x *Start) Execute(args []string) error {
 	var err error
 	// Create a new config
-	config := spvwallet.NewDefaultConfig()
+	config := bc.NewDefaultConfig()
 	if x.DataDir != "" {
 		config.RepoPath = x.DataDir
 	}
@@ -276,7 +277,7 @@ func (x *Start) Execute(args []string) error {
 	config.CreationDate = creationDate
 
 	// Create the wallet
-	wallet, err = spvwallet.NewSPVWallet(config)
+	wallet, err = bc.NewSPVWallet(config)
 	if err != nil {
 		return err
 	}
@@ -515,7 +516,7 @@ func (x *Start) Execute(args []string) error {
 					config.DB = sqliteDatastore
 					config.Mnemonic = p.Mnemonic
 					config.CreationDate = t
-					wallet, err = spvwallet.NewSPVWallet(config)
+					wallet, err = bc.NewSPVWallet(config)
 					if err != nil {
 						astilog.Errorf("Unmarshaling %s failed", m.Payload)
 						return
@@ -600,6 +601,6 @@ func printSplashScreen() {
 	blue.DisableColor()
 	white.DisableColor()
 	fmt.Println("")
-	fmt.Println("SPVWallet v" + spvwallet.WALLET_VERSION + " starting...")
+	fmt.Println("BitcoinCash wallet v" + bc.WALLET_VERSION + " starting...")
 	fmt.Println("[Press Ctrl+C to exit]")
 }

@@ -1,4 +1,4 @@
-package spvwallet
+package bitcoincash
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 	"time"
+	"github.com/OpenBazaar/spvwallet"
 )
 
 type Datastore interface {
@@ -72,7 +73,7 @@ type Keys interface {
 
 	// Fetch the last index for the given key purpose
 	// The bool should state whether the key has been used or not
-	GetLastKeyIndex(purpose KeyPurpose) (int, bool, error)
+	GetLastKeyIndex(purpose spvwallet.KeyPurpose) (int, bool, error)
 
 	// Returns the first unused path for the given purpose
 	GetPathForKey(scriptAddress []byte) (KeyPath, error)
@@ -81,7 +82,7 @@ type Keys interface {
 	GetKey(scriptAddress []byte) (*btcec.PrivateKey, error)
 
 	// Get a list of unused key indexes for the given purpose
-	GetUnused(purpose KeyPurpose) ([]int, error)
+	GetUnused(purpose spvwallet.KeyPurpose) ([]int, error)
 
 	// Return all imported keys
 	GetImported() ([]*btcec.PrivateKey, error)
@@ -91,7 +92,7 @@ type Keys interface {
 
 	// Get the number of unused keys following the last used key
 	// for each key purpose.
-	GetLookaheadWindows() map[KeyPurpose]int
+	GetLookaheadWindows() map[spvwallet.KeyPurpose]int
 }
 
 type WatchedScripts interface {

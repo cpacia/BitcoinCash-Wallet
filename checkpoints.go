@@ -1,4 +1,4 @@
-package spvwallet
+package bitcoincash
 
 import (
 	"github.com/btcsuite/btcd/chaincfg"

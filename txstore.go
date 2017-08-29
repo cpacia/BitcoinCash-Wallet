@@ -1,4 +1,4 @@
-package spvwallet
+package bitcoincash
 
 import (
 	"bytes"
@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 	"errors"
+	"github.com/OpenBazaar/spvwallet"
 )
 
 type TxStore struct {
@@ -25,7 +26,7 @@ type TxStore struct {
 
 	params *chaincfg.Params
 
-	listeners []func(TransactionCallback)
+	listeners []func(spvwallet.TransactionCallback)
 
 	Datastore
 }
@@ -234,11 +235,11 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32) (uint32, error) {
 
 	// Iterate through all outputs of this tx, see if we gain
 	cachedSha := tx.TxHash()
-	cb := TransactionCallback{Txid: cachedSha.CloneBytes(), Height: height}
+	cb := spvwallet.TransactionCallback{Txid: cachedSha.CloneBytes(), Height: height}
 	value := int64(0)
 	matchesWatchOnly := false
 	for i, txout := range tx.TxOut {
-		out := TransactionOutput{ScriptPubKey: txout.PkScript, Value: txout.Value, Index: uint32(i)}
+		out := spvwallet.TransactionOutput{ScriptPubKey: txout.PkScript, Value: txout.Value, Index: uint32(i)}
 		for _, script := range PKscripts {
 			if bytes.Equal(txout.PkScript, script) { // new utxo found
 				scriptAddress, _ := ts.extractScriptAddress(txout.PkScript)
@@ -302,7 +303,7 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32) (uint32, error) {
 					matchesWatchOnly = true
 				}
 
-				in := TransactionInput{
+				in := spvwallet.TransactionInput{
 					OutpointHash:       u.Op.Hash.CloneBytes(),
 					OutpointIndex:      u.Op.Index,
 					LinkedScriptPubKey: u.ScriptPubkey,

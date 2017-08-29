@@ -27,7 +27,7 @@ type Options struct {
 	ResizeChan         chan int
 	TransactionChan    chan uint32
 	MenuItemOptions    []*astilectron.MenuItemOptions
-	Wallet             *spvwallet.SPVWallet
+	Wallet             *bitcoincash.SPVWallet
 }
 
 // AdaptAstilectron is a function that adapts astilectron

@@ -1,4 +1,4 @@
-package spvwallet
+package bitcoincash
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"os"
 	"testing"
+	"github.com/OpenBazaar/spvwallet"
 )
 
 func MockWallet() *SPVWallet {
@@ -31,7 +32,7 @@ func Test_gatherCoins(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	key1, err := wallet.keyManager.GetFreshKey(EXTERNAL)
+	key1, err := wallet.keyManager.GetFreshKey(spvwallet.EXTERNAL)
 	if err != nil {
 		t.Error(err)
 	}

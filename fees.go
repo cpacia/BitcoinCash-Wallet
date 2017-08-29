@@ -1,4 +1,4 @@
-package spvwallet
+package bitcoincash
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"time"
+	"github.com/OpenBazaar/spvwallet"
 )
 
 type httpClient interface {
@@ -54,16 +55,16 @@ func NewFeeProvider(maxFee, priorityFee, normalFee, economicFee uint64, feeAPI s
 	return &fp
 }
 
-func (fp *FeeProvider) GetFeePerByte(feeLevel FeeLevel) uint64 {
+func (fp *FeeProvider) GetFeePerByte(feeLevel spvwallet.FeeLevel) uint64 {
 	defaultFee := func() uint64 {
 		switch feeLevel {
-		case PRIOIRTY:
+		case spvwallet.PRIOIRTY:
 			return fp.priorityFee
-		case NORMAL:
+		case spvwallet.NORMAL:
 			return fp.normalFee
-		case ECONOMIC:
+		case spvwallet.ECONOMIC:
 			return fp.economicFee
-		case FEE_BUMP:
+		case spvwallet.FEE_BUMP:
 			return fp.priorityFee * 2
 		default:
 			return fp.normalFee
@@ -91,25 +92,25 @@ func (fp *FeeProvider) GetFeePerByte(feeLevel FeeLevel) uint64 {
 		fees = fp.cache.fees
 	}
 	switch feeLevel {
-	case PRIOIRTY:
+	case spvwallet.PRIOIRTY:
 		if fees.FastestFee > fp.maxFee || fees.FastestFee == 0 {
 			return fp.maxFee
 		} else {
 			return fees.FastestFee
 		}
-	case NORMAL:
+	case spvwallet.NORMAL:
 		if fees.HalfHourFee > fp.maxFee || fees.HalfHourFee == 0 {
 			return fp.maxFee
 		} else {
 			return fees.HalfHourFee
 		}
-	case ECONOMIC:
+	case spvwallet.ECONOMIC:
 		if fees.HourFee > fp.maxFee || fees.HourFee == 0 {
 			return fp.maxFee
 		} else {
 			return fees.HourFee
 		}
-	case FEE_BUMP:
+	case spvwallet.FEE_BUMP:
 		if (fees.FastestFee*2) > fp.maxFee || fees.FastestFee == 0 {
 			return fp.maxFee
 		} else {

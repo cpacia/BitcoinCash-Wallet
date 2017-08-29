@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"github.com/OpenBazaar/jsonpb"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/cpacia/BitcoinCash-Wallet"
+	bc "github.com/cpacia/BitcoinCash-Wallet"
 	"github.com/cpacia/BitcoinCash-Wallet/api"
 	"github.com/cpacia/BitcoinCash-Wallet/api/pb"
 	"github.com/golang/protobuf/ptypes"
@@ -974,7 +974,7 @@ func (x *DumpHeaders) Execute(args []string) error {
 			fmt.Println(hdr.Entry)
 		}
 	} else {
-		db, _ := spvwallet.NewHeaderDB(args[0])
+		db, _ := bc.NewHeaderDB(args[0])
 		db.Print(os.Stdout)
 	}
 	return nil

@@ -5,10 +5,10 @@ import (
 	"encoding/hex"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/cpacia/BitcoinCash-Wallet"
 	"strconv"
 	"strings"
 	"sync"
+	bc "github.com/cpacia/BitcoinCash-Wallet"
 )
 
 type UtxoDB struct {
@@ -16,7 +16,7 @@ type UtxoDB struct {
 	lock *sync.RWMutex
 }
 
-func (u *UtxoDB) Put(utxo spvwallet.Utxo) error {
+func (u *UtxoDB) Put(utxo bc.Utxo) error {
 	u.lock.Lock()
 	defer u.lock.Unlock()
 	tx, _ := u.db.Begin()
@@ -40,10 +40,10 @@ func (u *UtxoDB) Put(utxo spvwallet.Utxo) error {
 	return nil
 }
 
-func (u *UtxoDB) GetAll() ([]spvwallet.Utxo, error) {
+func (u *UtxoDB) GetAll() ([]bc.Utxo, error) {
 	u.lock.RLock()
 	defer u.lock.RUnlock()
-	var ret []spvwallet.Utxo
+	var ret []bc.Utxo
 	stm := "select outpoint, value, height, scriptPubKey, watchOnly from utxos"
 	rows, err := u.db.Query(stm)
 	defer rows.Close()
@@ -79,7 +79,7 @@ func (u *UtxoDB) GetAll() ([]spvwallet.Utxo, error) {
 		if watchOnlyInt == 1 {
 			watchOnly = true
 		}
-		ret = append(ret, spvwallet.Utxo{
+		ret = append(ret, bc.Utxo{
 			Op:           *wire.NewOutPoint(shaHash, uint32(index)),
 			AtHeight:     int32(height),
 			Value:        int64(value),
@@ -90,7 +90,7 @@ func (u *UtxoDB) GetAll() ([]spvwallet.Utxo, error) {
 	return ret, nil
 }
 
-func (u *UtxoDB) SetWatchOnly(utxo spvwallet.Utxo) error {
+func (u *UtxoDB) SetWatchOnly(utxo bc.Utxo) error {
 	u.lock.Lock()
 	defer u.lock.Unlock()
 	outpoint := utxo.Op.Hash.String() + ":" + strconv.Itoa(int(utxo.Op.Index))
@@ -101,7 +101,7 @@ func (u *UtxoDB) SetWatchOnly(utxo spvwallet.Utxo) error {
 	return nil
 }
 
-func (u *UtxoDB) Delete(utxo spvwallet.Utxo) error {
+func (u *UtxoDB) Delete(utxo bc.Utxo) error {
 	u.lock.Lock()
 	defer u.lock.Unlock()
 	outpoint := utxo.Op.Hash.String() + ":" + strconv.Itoa(int(utxo.Op.Index))
