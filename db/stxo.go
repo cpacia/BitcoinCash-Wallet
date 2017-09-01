@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	bc "github.com/cpacia/BitcoinCash-Wallet"
+	"github.com/OpenBazaar/wallet-interface"
 )
 
 type StxoDB struct {
@@ -16,7 +16,7 @@ type StxoDB struct {
 	lock *sync.RWMutex
 }
 
-func (s *StxoDB) Put(stxo bc.Stxo) error {
+func (s *StxoDB) Put(stxo wallet.Stxo) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	tx, _ := s.db.Begin()
@@ -40,10 +40,10 @@ func (s *StxoDB) Put(stxo bc.Stxo) error {
 	return nil
 }
 
-func (s *StxoDB) GetAll() ([]bc.Stxo, error) {
+func (s *StxoDB) GetAll() ([]wallet.Stxo, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
-	var ret []bc.Stxo
+	var ret []wallet.Stxo
 	stm := "select outpoint, value, height, scriptPubKey, watchOnly, spendHeight, spendTxid from stxos"
 	rows, err := s.db.Query(stm)
 	defer rows.Close()
@@ -85,14 +85,14 @@ func (s *StxoDB) GetAll() ([]bc.Stxo, error) {
 		if err != nil {
 			continue
 		}
-		utxo := bc.Utxo{
+		utxo := wallet.Utxo{
 			Op:           *wire.NewOutPoint(shaHash, uint32(index)),
 			AtHeight:     int32(height),
 			Value:        int64(value),
 			ScriptPubkey: scriptBytes,
 			WatchOnly:    watchOnly,
 		}
-		ret = append(ret, bc.Stxo{
+		ret = append(ret, wallet.Stxo{
 			Utxo:        utxo,
 			SpendHeight: int32(spendHeight),
 			SpendTxid:   *spentHash,
@@ -101,7 +101,7 @@ func (s *StxoDB) GetAll() ([]bc.Stxo, error) {
 	return ret, nil
 }
 
-func (s *StxoDB) Delete(stxo bc.Stxo) error {
+func (s *StxoDB) Delete(stxo wallet.Stxo) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	outpoint := stxo.Utxo.Op.Hash.String() + ":" + strconv.Itoa(int(stxo.Utxo.Op.Index))

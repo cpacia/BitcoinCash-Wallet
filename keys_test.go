@@ -9,7 +9,7 @@ import (
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"testing"
-	"github.com/OpenBazaar/spvwallet"
+	"github.com/OpenBazaar/wallet-interface"
 )
 
 func createKeyManager() (*KeyManager, error) {
@@ -73,7 +73,7 @@ func TestKeys_generateChildKey(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	internalKey, err := km.generateChildKey(spvwallet.INTERNAL, 0)
+	internalKey, err := km.generateChildKey(wallet.INTERNAL, 0)
 	internalAddr, err := internalKey.Address(&chaincfg.MainNetParams)
 	if err != nil {
 		t.Error(err)
@@ -81,7 +81,7 @@ func TestKeys_generateChildKey(t *testing.T) {
 	if internalAddr.String() != "16wbbYdecq9QzXdxa58q2dYXJRc8sfkE4J" {
 		t.Error("generateChildKey returned incorrect key")
 	}
-	externalKey, err := km.generateChildKey(spvwallet.EXTERNAL, 0)
+	externalKey, err := km.generateChildKey(wallet.EXTERNAL, 0)
 	externalAddr, err := externalKey.Address(&chaincfg.MainNetParams)
 	if err != nil {
 		t.Error(err)
@@ -128,14 +128,14 @@ func TestKeyManager_MarkKeyAsUsed(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	i, err := km.datastore.GetUnused(spvwallet.EXTERNAL)
+	i, err := km.datastore.GetUnused(wallet.EXTERNAL)
 	if err != nil {
 		t.Error(err)
 	}
 	if len(i) == 0 {
 		t.Error("No unused keys in database")
 	}
-	key, err := km.generateChildKey(spvwallet.EXTERNAL, uint32(i[0]))
+	key, err := km.generateChildKey(wallet.EXTERNAL, uint32(i[0]))
 	if err != nil {
 		t.Error(err)
 	}
@@ -150,7 +150,7 @@ func TestKeyManager_MarkKeyAsUsed(t *testing.T) {
 	if len(km.GetKeys()) != (LOOKAHEADWINDOW*2)+1 {
 		t.Error("Failed to extend lookahead window when marking as read")
 	}
-	unused, err := km.datastore.GetUnused(spvwallet.EXTERNAL)
+	unused, err := km.datastore.GetUnused(wallet.EXTERNAL)
 	if err != nil {
 		t.Error(err)
 	}
@@ -173,12 +173,12 @@ func TestKeyManager_GetCurrentKey(t *testing.T) {
 	}
 	var scriptAddress string
 	for script, key := range mock.keys {
-		if key.path.Purpose == spvwallet.EXTERNAL && key.path.Index == 0 {
+		if key.path.Purpose == wallet.EXTERNAL && key.path.Index == 0 {
 			scriptAddress = script
 			break
 		}
 	}
-	key, err := km.GetCurrentKey(spvwallet.EXTERNAL)
+	key, err := km.GetCurrentKey(wallet.EXTERNAL)
 	if err != nil {
 		t.Error(err)
 	}
@@ -196,14 +196,14 @@ func TestKeyManager_GetFreshKey(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	key, err := km.GetFreshKey(spvwallet.EXTERNAL)
+	key, err := km.GetFreshKey(wallet.EXTERNAL)
 	if err != nil {
 		t.Error(err)
 	}
 	if len(km.GetKeys()) != LOOKAHEADWINDOW*2+1 {
 		t.Error("Failed to create additional key")
 	}
-	key2, err := km.generateChildKey(spvwallet.EXTERNAL, 100)
+	key2, err := km.generateChildKey(wallet.EXTERNAL, 100)
 	if err != nil {
 		t.Error(err)
 	}

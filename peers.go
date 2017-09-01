@@ -9,12 +9,12 @@ import (
 	"github.com/btcsuite/btcd/peer"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil/bloom"
+	"github.com/cpacia/bchutil"
 	"golang.org/x/net/proxy"
 	"net"
 	"strconv"
 	"sync"
 	"time"
-	"github.com/cpacia/bchutil"
 )
 
 var (
@@ -76,9 +76,10 @@ type PeerManager struct {
 
 	sourceAddr *wire.NetAddress
 
-	peerConfig     *peer.Config
-	connectedPeers map[uint64]*peer.Peer
-	peerMutex      *sync.RWMutex
+	peerConfig *peer.Config
+	openPeers  map[uint64]*peer.Peer
+	readyPeers map[*peer.Peer]struct{}
+	peerMutex  *sync.RWMutex
 
 	trustedPeer    net.Addr
 	downloadPeer   *peer.Peer
@@ -102,7 +103,8 @@ func NewPeerManager(config *PeerManagerConfig) (*PeerManager, error) {
 	pm := &PeerManager{
 		addrManager:        addrmgr.New(config.AddressCacheDir, nil),
 		peerMutex:          new(sync.RWMutex),
-		connectedPeers:     make(map[uint64]*peer.Peer),
+		openPeers:          make(map[uint64]*peer.Peer),
+		readyPeers:         make(map[*peer.Peer]struct{}),
 		downloadQueues:     make(map[int32]map[chainhash.Hash]int32),
 		sourceAddr:         wire.NewNetAddressIPPort(net.ParseIP("0.0.0.0"), defaultPort, 0),
 		trustedPeer:        config.TrustedPeer,
@@ -169,11 +171,11 @@ func NewPeerManager(config *PeerManagerConfig) (*PeerManager, error) {
 	return pm, nil
 }
 
-func (pm *PeerManager) ConnectedPeers() []*peer.Peer {
+func (pm *PeerManager) ReadyPeers() []*peer.Peer {
 	var peers []*peer.Peer
 	pm.peerMutex.RLock()
 	defer pm.peerMutex.RUnlock()
-	for _, peer := range pm.connectedPeers {
+	for peer := range pm.readyPeers {
 		peers = append(peers, peer)
 	}
 	return peers
@@ -188,7 +190,7 @@ func (pm *PeerManager) onConnection(req *connmgr.ConnReq, conn net.Conn) {
 	pm.peerMutex.Lock()
 	defer pm.peerMutex.Unlock()
 	if pm.proxy == nil {
-		for _, peer := range pm.connectedPeers {
+		for _, peer := range pm.openPeers {
 			if conn.RemoteAddr().String() == peer.Addr() {
 				pm.connManager.Disconnect(req.ID())
 				return
@@ -204,7 +206,7 @@ func (pm *PeerManager) onConnection(req *connmgr.ConnReq, conn net.Conn) {
 	}
 
 	// Add to connected peers
-	pm.connectedPeers[req.ID()] = p
+	pm.openPeers[req.ID()] = p
 
 	// Associate the connection with the peer
 	p.AssociateConnection(conn)
@@ -225,15 +227,8 @@ func (pm *PeerManager) onVerack(p *peer.Peer, msg *wire.MsgVerAck) {
 	if !(p.NA().HasService(wire.SFNodeBloom) &&
 		p.NA().HasService(wire.SFNodeNetwork) &&
 		p.NA().HasService(bchutil.SFNodeBitcoinCash)) {
-		pm.peerMutex.Lock()
-		for id, peer := range pm.connectedPeers {
-			if peer.ID() == p.ID() {
-				delete(pm.connectedPeers, id)
-				pm.connManager.Disconnect(id)
-				break
-			}
-		}
-		pm.peerMutex.Unlock()
+		// onDisconnection will be called
+		// which will remove the peer from openPeers
 		p.Disconnect()
 		return
 	}
@@ -249,6 +244,7 @@ func (pm *PeerManager) onVerack(p *peer.Peer, msg *wire.MsgVerAck) {
 	p.QueueMessage(filter.MsgFilterLoad(), nil)
 
 	pm.peerMutex.Lock()
+	pm.readyPeers[p] = struct{}{}
 	if pm.downloadPeer == nil {
 		pm.setDownloadPeer(p)
 	}
@@ -259,27 +255,26 @@ func (pm *PeerManager) onDisconnection(req *connmgr.ConnReq) {
 	// Remove from connected peers
 	pm.peerMutex.Lock()
 	defer pm.peerMutex.Unlock()
-	peer, ok := pm.connectedPeers[req.ID()]
-	if ok {
-		log.Debugf("Peer%d disconnected", peer.ID())
-		delete(pm.connectedPeers, req.ID())
-		_, ok := pm.downloadQueues[peer.ID()]
-		if ok {
-			delete(pm.downloadQueues, peer.ID())
-		}
+	peer, ok := pm.openPeers[req.ID()]
+	if !ok {
+		return
 	}
-	pm.connManager.Disconnect(req.ID())
+
+	log.Debugf("Peer%d disconnected", peer.ID())
+	delete(pm.openPeers, req.ID())
+	delete(pm.downloadQueues, peer.ID())
+	delete(pm.readyPeers, peer)
 
 	// If this was our download peer we lost, replace him
 	if pm.downloadPeer != nil && peer != nil {
 		if pm.downloadPeer.ID() == peer.ID() {
-			go pm.selectNewDownlaodPeer()
+			go pm.selectNewDownloadPeer()
 		}
 	}
 }
 
-func (pm *PeerManager) selectNewDownlaodPeer() {
-	for _, peer := range pm.connectedPeers {
+func (pm *PeerManager) selectNewDownloadPeer() {
+	for _, peer := range pm.ReadyPeers() {
 		pm.setDownloadPeer(peer)
 		break
 	}
@@ -327,7 +322,7 @@ func (pm *PeerManager) CheckForMoreBlocks(height uint32) bool {
 	defer pm.peerMutex.RUnlock()
 
 	moar := false
-	for _, peer := range pm.connectedPeers {
+	for _, peer := range pm.ReadyPeers() {
 		if uint32(peer.LastBlock()) > height {
 			pm.downloadPeer = peer
 			go pm.startChainDownload(peer)
@@ -397,10 +392,10 @@ func (pm *PeerManager) queryDNSSeeds() {
 // If we have connected peers let's use them to get more addresses. If not, use the DNS seeds
 func (pm *PeerManager) getMoreAddresses() {
 	if pm.addrManager.NeedMoreAddresses() {
-		if len(pm.connectedPeers) > 0 {
+		if len(pm.readyPeers) > 0 {
 			pm.peerMutex.RLock()
 			log.Debug("Querying peers for more addresses")
-			for _, peer := range pm.connectedPeers {
+			for peer := range pm.readyPeers {
 				peer.QueueMessage(wire.NewMsgGetAddr(), nil)
 			}
 			pm.peerMutex.RUnlock()
@@ -438,7 +433,7 @@ func (pm *PeerManager) Stop() {
 	pm.peerMutex.Lock()
 	defer pm.peerMutex.Unlock()
 	wg := new(sync.WaitGroup)
-	for _, peer := range pm.connectedPeers {
+	for _, peer := range pm.openPeers {
 		wg.Add(1)
 		go func() {
 			peer.Disconnect()
@@ -446,5 +441,6 @@ func (pm *PeerManager) Stop() {
 			wg.Done()
 		}()
 	}
+	pm.openPeers = make(map[uint64]*peer.Peer)
 	wg.Wait()
 }

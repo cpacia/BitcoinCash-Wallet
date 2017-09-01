@@ -9,8 +9,7 @@ import (
 	"math/rand"
 	"strconv"
 	"sync"
-	bc "github.com/cpacia/BitcoinCash-Wallet"
-	"github.com/OpenBazaar/spvwallet"
+	"github.com/OpenBazaar/wallet-interface"
 )
 
 type KeysDB struct {
@@ -18,7 +17,7 @@ type KeysDB struct {
 	lock *sync.RWMutex
 }
 
-func (k *KeysDB) Put(scriptAddress []byte, keyPath bc.KeyPath) error {
+func (k *KeysDB) Put(scriptAddress []byte, keyPath wallet.KeyPath) error {
 	k.lock.Lock()
 	defer k.lock.Unlock()
 	tx, err := k.db.Begin()
@@ -77,7 +76,7 @@ func (k *KeysDB) MarkKeyAsUsed(scriptAddress []byte) error {
 	return nil
 }
 
-func (k *KeysDB) GetLastKeyIndex(purpose spvwallet.KeyPurpose) (int, bool, error) {
+func (k *KeysDB) GetLastKeyIndex(purpose wallet.KeyPurpose) (int, bool, error) {
 	k.lock.RLock()
 	defer k.lock.RUnlock()
 
@@ -99,7 +98,7 @@ func (k *KeysDB) GetLastKeyIndex(purpose spvwallet.KeyPurpose) (int, bool, error
 	return index, used, nil
 }
 
-func (k *KeysDB) GetPathForKey(scriptAddress []byte) (bc.KeyPath, error) {
+func (k *KeysDB) GetPathForKey(scriptAddress []byte) (wallet.KeyPath, error) {
 	k.lock.RLock()
 	defer k.lock.RUnlock()
 
@@ -109,10 +108,10 @@ func (k *KeysDB) GetPathForKey(scriptAddress []byte) (bc.KeyPath, error) {
 	var index int
 	err = stmt.QueryRow(hex.EncodeToString(scriptAddress)).Scan(&purpose, &index)
 	if err != nil {
-		return bc.KeyPath{}, errors.New("Key not found")
+		return wallet.KeyPath{}, errors.New("Key not found")
 	}
-	p := bc.KeyPath{
-		Purpose: spvwallet.KeyPurpose(purpose),
+	p := wallet.KeyPath{
+		Purpose: wallet.KeyPurpose(purpose),
 		Index:   index,
 	}
 	return p, nil
@@ -137,7 +136,7 @@ func (k *KeysDB) GetKey(scriptAddress []byte) (*btcec.PrivateKey, error) {
 	return key, nil
 }
 
-func (k *KeysDB) GetUnused(purpose spvwallet.KeyPurpose) ([]int, error) {
+func (k *KeysDB) GetUnused(purpose wallet.KeyPurpose) ([]int, error) {
 	k.lock.RLock()
 	defer k.lock.RUnlock()
 	var ret []int
@@ -184,10 +183,10 @@ func (k *KeysDB) GetImported() ([]*btcec.PrivateKey, error) {
 	return ret, nil
 }
 
-func (k *KeysDB) GetAll() ([]bc.KeyPath, error) {
+func (k *KeysDB) GetAll() ([]wallet.KeyPath, error) {
 	k.lock.RLock()
 	defer k.lock.RUnlock()
-	var ret []bc.KeyPath
+	var ret []wallet.KeyPath
 	stm := "select purpose, keyIndex from keys"
 	rows, err := k.db.Query(stm)
 	defer rows.Close()
@@ -201,8 +200,8 @@ func (k *KeysDB) GetAll() ([]bc.KeyPath, error) {
 		if err := rows.Scan(&purpose, &index); err != nil {
 			fmt.Println(err)
 		}
-		p := bc.KeyPath{
-			Purpose: spvwallet.KeyPurpose(purpose),
+		p := wallet.KeyPath{
+			Purpose: wallet.KeyPurpose(purpose),
 			Index:   index,
 		}
 		ret = append(ret, p)
@@ -210,10 +209,10 @@ func (k *KeysDB) GetAll() ([]bc.KeyPath, error) {
 	return ret, nil
 }
 
-func (k *KeysDB) GetLookaheadWindows() map[spvwallet.KeyPurpose]int {
+func (k *KeysDB) GetLookaheadWindows() map[wallet.KeyPurpose]int {
 	k.lock.RLock()
 	defer k.lock.RUnlock()
-	windows := make(map[spvwallet.KeyPurpose]int)
+	windows := make(map[wallet.KeyPurpose]int)
 	for i := 0; i < 2; i++ {
 		stm := "select used from keys where purpose=" + strconv.Itoa(i) + " order by rowid desc"
 		rows, err := k.db.Query(stm)
@@ -232,7 +231,7 @@ func (k *KeysDB) GetLookaheadWindows() map[spvwallet.KeyPurpose]int {
 				break
 			}
 		}
-		purpose := spvwallet.KeyPurpose(i)
+		purpose := wallet.KeyPurpose(i)
 		windows[purpose] = unusedCount
 		rows.Close()
 	}

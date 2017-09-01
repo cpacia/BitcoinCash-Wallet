@@ -6,14 +6,13 @@ import (
 	"encoding/hex"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
-	bc "github.com/cpacia/BitcoinCash-Wallet"
 	"strconv"
 	"sync"
 	"testing"
 )
 
 var uxdb UtxoDB
-var utxo bc.Utxo
+var utxo spvwallet.Utxo
 
 func init() {
 	conn, _ := sql.Open("sqlite3", ":memory:")
@@ -24,7 +23,7 @@ func init() {
 	}
 	sh1, _ := chainhash.NewHashFromStr("e941e1c32b3dd1a68edc3af9f7fe711f35aaca60f758c2dd49561e45ca2c41c0")
 	outpoint := wire.NewOutPoint(sh1, 0)
-	utxo = bc.Utxo{
+	utxo = spvwallet.Utxo{
 		Op:           *outpoint,
 		AtHeight:     300000,
 		Value:        100000000,

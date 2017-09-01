@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/OpenBazaar/spvwallet"
-	"github.com/OpenBazaar/spvwallet/db"
+	"github.com/cpacia/BitcoinCash-Wallet"
+	"github.com/cpacia/BitcoinCash-Wallet/db"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/op/go-logging"
 )
 
 func main() {
 	// Create a new config
-	config := spvwallet.NewDefaultConfig()
+	config := bitcoincash.NewDefaultConfig()
 
 	// Make the logging a little prettier
 	backend := logging.NewLogBackend(os.Stdout, "", 0)
@@ -28,7 +28,7 @@ func main() {
 	config.DB = sqliteDatastore
 
 	// Create the wallet
-	wallet, err := spvwallet.NewSPVWallet(config)
+	wallet, err := bitcoincash.NewSPVWallet(config)
 	if err != nil {
 		fmt.Println(err)
 		return

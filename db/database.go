@@ -2,21 +2,21 @@ package db
 
 import (
 	"database/sql"
-	bc "github.com/cpacia/BitcoinCash-Wallet"
 	_ "github.com/mattn/go-sqlite3"
 	"path"
 	"sync"
 	"time"
+	"github.com/OpenBazaar/wallet-interface"
 )
 
 // This database is mostly just an example implementation used for testing.
 // End users are free to user their own database.
 type SQLiteDatastore struct {
-	keys           bc.Keys
-	utxos          bc.Utxos
-	stxos          bc.Stxos
-	txns           bc.Txns
-	watchedScripts bc.WatchedScripts
+	keys           wallet.Keys
+	utxos          wallet.Utxos
+	stxos          wallet.Stxos
+	txns           wallet.Txns
+	watchedScripts wallet.WatchedScripts
 	db             *sql.DB
 	lock           *sync.RWMutex
 }
@@ -57,19 +57,19 @@ func Create(repoPath string) (*SQLiteDatastore, error) {
 	return sqliteDB, nil
 }
 
-func (db *SQLiteDatastore) Keys() bc.Keys {
+func (db *SQLiteDatastore) Keys() wallet.Keys {
 	return db.keys
 }
-func (db *SQLiteDatastore) Utxos() bc.Utxos {
+func (db *SQLiteDatastore) Utxos() wallet.Utxos {
 	return db.utxos
 }
-func (db *SQLiteDatastore) Stxos() bc.Stxos {
+func (db *SQLiteDatastore) Stxos() wallet.Stxos {
 	return db.stxos
 }
-func (db *SQLiteDatastore) Txns() bc.Txns {
+func (db *SQLiteDatastore) Txns() wallet.Txns {
 	return db.txns
 }
-func (db *SQLiteDatastore) WatchedScripts() bc.WatchedScripts {
+func (db *SQLiteDatastore) WatchedScripts() wallet.WatchedScripts {
 	return db.watchedScripts
 }
 

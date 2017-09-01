@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"time"
+	"github.com/OpenBazaar/wallet-interface"
 )
 
 type Config struct {
@@ -31,7 +32,7 @@ type Config struct {
 	RepoPath string
 
 	// An implementation of the Datastore interface
-	DB Datastore
+	DB wallet.Datastore
 
 	// If you wish to connect to a single trusted peer set this. Otherwise leave nil.
 	TrustedPeer net.Addr

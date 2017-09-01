@@ -17,7 +17,7 @@ import (
 	"path"
 	"sync"
 	"time"
-	"github.com/OpenBazaar/spvwallet"
+	"github.com/OpenBazaar/wallet-interface"
 )
 
 type SPVWallet struct {
@@ -199,16 +199,16 @@ func (w *SPVWallet) CreationDate() time.Time {
 }
 
 func (w *SPVWallet) ConnectedPeers() []*peer.Peer {
-	return w.peerManager.ConnectedPeers()
+	return w.peerManager.ReadyPeers()
 }
 
-func (w *SPVWallet) CurrentAddress(purpose spvwallet.KeyPurpose) btc.Address {
+func (w *SPVWallet) CurrentAddress(purpose wallet.KeyPurpose) btc.Address {
 	key, _ := w.keyManager.GetCurrentKey(purpose)
 	addr, _ := key.Address(w.params)
 	return btc.Address(addr)
 }
 
-func (w *SPVWallet) NewAddress(purpose spvwallet.KeyPurpose) btc.Address {
+func (w *SPVWallet) NewAddress(purpose wallet.KeyPurpose) btc.Address {
 	i, _ := w.txstore.Keys().GetUnused(purpose)
 	key, _ := w.keyManager.generateChildKey(purpose, uint32(i[1]))
 	addr, _ := key.Address(w.params)
@@ -313,11 +313,11 @@ func (w *SPVWallet) Balance() (confirmed, unconfirmed int64) {
 	return confirmed, unconfirmed
 }
 
-func (w *SPVWallet) Transactions() ([]Txn, error) {
+func (w *SPVWallet) Transactions() ([]wallet.Txn, error) {
 	return w.txstore.Txns().GetAll(false)
 }
 
-func (w *SPVWallet) GetTransaction(txid chainhash.Hash) (Txn, error) {
+func (w *SPVWallet) GetTransaction(txid chainhash.Hash) (wallet.Txn, error) {
 	_, txn, err := w.txstore.Txns().Get(txid)
 	return txn, err
 }
@@ -334,7 +334,7 @@ func (w *SPVWallet) GetConfirmations(txid chainhash.Hash) (uint32, uint32, error
 	return chainTip - uint32(txn.Height) + 1, uint32(txn.Height), nil
 }
 
-func (w *SPVWallet) checkIfStxoIsConfirmed(utxo Utxo, stxos []Stxo) bool {
+func (w *SPVWallet) checkIfStxoIsConfirmed(utxo wallet.Utxo, stxos []wallet.Stxo) bool {
 	for _, stxo := range stxos {
 		if !stxo.Utxo.WatchOnly {
 			if stxo.SpendTxid.IsEqual(&utxo.Op.Hash) {
@@ -359,7 +359,7 @@ func (w *SPVWallet) Params() *chaincfg.Params {
 	return w.params
 }
 
-func (w *SPVWallet) AddTransactionListener(callback func(spvwallet.TransactionCallback)) {
+func (w *SPVWallet) AddTransactionListener(callback func(wallet.TransactionCallback)) {
 	w.txstore.listeners = append(w.txstore.listeners, callback)
 }
 
@@ -376,7 +376,7 @@ func (w *SPVWallet) AddWatchedScript(script []byte) error {
 	err := w.txstore.WatchedScripts().Put(script)
 	w.txstore.PopulateAdrs()
 
-	for _, peer := range w.peerManager.ConnectedPeers() {
+	for _, peer := range w.peerManager.ReadyPeers() {
 		w.updateFilterAndSend(peer)
 	}
 	return err

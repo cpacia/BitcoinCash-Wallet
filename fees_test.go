@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 	"github.com/OpenBazaar/spvwallet"
+	"github.com/OpenBazaar/wallet-interface"
 )
 
 type ClosingBuffer struct {
@@ -31,46 +32,46 @@ func TestFeeProvider_GetFeePerByte(t *testing.T) {
 	fp.httpClient = new(mockHttpClient)
 
 	// Test fetch from API
-	if fp.GetFeePerByte(spvwallet.PRIOIRTY) != 450 {
+	if fp.GetFeePerByte(wallet.PRIOIRTY) != 450 {
 		t.Error("Returned incorrect fee per byte")
 	}
-	if fp.GetFeePerByte(spvwallet.NORMAL) != 420 {
+	if fp.GetFeePerByte(wallet.NORMAL) != 420 {
 		t.Error("Returned incorrect fee per byte")
 	}
-	if fp.GetFeePerByte(spvwallet.ECONOMIC) != 390 {
+	if fp.GetFeePerByte(wallet.ECONOMIC) != 390 {
 		t.Error("Returned incorrect fee per byte")
 	}
-	if fp.GetFeePerByte(spvwallet.FEE_BUMP) != 900 {
+	if fp.GetFeePerByte(wallet.FEE_BUMP) != 900 {
 		t.Error("Returned incorrect fee per byte")
 	}
 
 	// Test return over max
 	fp.maxFee = 100
-	if fp.GetFeePerByte(spvwallet.PRIOIRTY) != 100 {
+	if fp.GetFeePerByte(wallet.PRIOIRTY) != 100 {
 		t.Error("Returned incorrect fee per byte")
 	}
-	if fp.GetFeePerByte(spvwallet.NORMAL) != 100 {
+	if fp.GetFeePerByte(wallet.NORMAL) != 100 {
 		t.Error("Returned incorrect fee per byte")
 	}
-	if fp.GetFeePerByte(spvwallet.ECONOMIC) != 100 {
+	if fp.GetFeePerByte(wallet.ECONOMIC) != 100 {
 		t.Error("Returned incorrect fee per byte")
 	}
-	if fp.GetFeePerByte(spvwallet.FEE_BUMP) != 100 {
+	if fp.GetFeePerByte(wallet.FEE_BUMP) != 100 {
 		t.Error("Returned incorrect fee per byte")
 	}
 
 	// Test no API provided
 	fp.feeAPI = ""
-	if fp.GetFeePerByte(spvwallet.PRIOIRTY) != 360 {
+	if fp.GetFeePerByte(wallet.PRIOIRTY) != 360 {
 		t.Error("Returned incorrect fee per byte")
 	}
-	if fp.GetFeePerByte(spvwallet.NORMAL) != 320 {
+	if fp.GetFeePerByte(wallet.NORMAL) != 320 {
 		t.Error("Returned incorrect fee per byte")
 	}
-	if fp.GetFeePerByte(spvwallet.ECONOMIC) != 280 {
+	if fp.GetFeePerByte(wallet.ECONOMIC) != 280 {
 		t.Error("Returned incorrect fee per byte")
 	}
-	if fp.GetFeePerByte(spvwallet.FEE_BUMP) != 720 {
+	if fp.GetFeePerByte(wallet.FEE_BUMP) != 720 {
 		t.Error("Returned incorrect fee per byte")
 	}
 }

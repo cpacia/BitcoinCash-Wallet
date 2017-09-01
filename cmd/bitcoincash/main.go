@@ -33,7 +33,7 @@ import (
 	"path"
 	"strings"
 	"time"
-	"github.com/OpenBazaar/spvwallet"
+	"github.com/OpenBazaar/wallet-interface"
 )
 
 var parser = flags.NewParser(nil, flags.Default)
@@ -57,7 +57,7 @@ type Version struct{}
 
 var start Start
 var version Version
-var wallet *bc.SPVWallet
+var cashWallet *bc.SPVWallet
 
 func main() {
 	c := make(chan os.Signal, 1)
@@ -65,7 +65,7 @@ func main() {
 	go func() {
 		for range c {
 			fmt.Println("BitcoinCash wallet shutting down...")
-			wallet.Close()
+			cashWallet.Close()
 			os.Exit(1)
 		}
 	}()
@@ -277,7 +277,7 @@ func (x *Start) Execute(args []string) error {
 	config.CreationDate = creationDate
 
 	// Create the wallet
-	wallet, err = bc.NewSPVWallet(config)
+	cashWallet, err = bc.NewSPVWallet(config)
 	if err != nil {
 		return err
 	}
@@ -289,13 +289,13 @@ func (x *Start) Execute(args []string) error {
 		return err
 	}
 
-	go api.ServeAPI(wallet)
+	go api.ServeAPI(cashWallet)
 
 	// Start it!
 	printSplashScreen()
 
 	if x.Gui {
-		go wallet.Start()
+		go cashWallet.Start()
 
 		exchangeRates := exchangerates.NewBitcoinCashPriceFetcher(config.Proxy)
 
@@ -308,11 +308,11 @@ func (x *Start) Execute(args []string) error {
 		}
 
 		txc := make(chan uint32)
-		listener := func(spvwallet.TransactionCallback) {
-			h, _ := wallet.ChainTip()
+		listener := func(wallet.TransactionCallback) {
+			h, _ := cashWallet.ChainTip()
 			txc <- h
 		}
-		wallet.AddTransactionListener(listener)
+		cashWallet.AddTransactionListener(listener)
 
 		tc := make(chan struct{})
 		rc := make(chan int)
@@ -353,8 +353,8 @@ func (x *Start) Execute(args []string) error {
 						astilog.Errorf("Unmarshaling %s failed", m.Payload)
 						return
 					}
-					confirmed, _ := wallet.Balance()
-					txs, err := wallet.Transactions()
+					confirmed, _ := cashWallet.Balance()
+					txs, err := cashWallet.Transactions()
 					if err != nil {
 						astilog.Errorf(err.Error())
 						return
@@ -366,7 +366,7 @@ func (x *Start) Execute(args []string) error {
 					}
 					btcVal := float64(confirmed) / 100000000
 					fiatVal := float64(btcVal) * rate
-					height, _ := wallet.ChainTip()
+					height, _ := cashWallet.ChainTip()
 
 					st := Stats{
 						Confirmed:    confirmed,
@@ -377,7 +377,7 @@ func (x *Start) Execute(args []string) error {
 					}
 					w.Send(bootstrap.MessageOut{Name: "statsUpdate", Payload: st})
 				case "getAddress":
-					addr := wallet.CurrentAddress(spvwallet.EXTERNAL)
+					addr := cashWallet.CurrentAddress(wallet.EXTERNAL)
 					w.Send(bootstrap.MessageOut{Name: "address", Payload: addr.EncodeAddress()})
 				case "send":
 					type P struct {
@@ -391,23 +391,23 @@ func (x *Start) Execute(args []string) error {
 						astilog.Errorf("Unmarshaling %s failed", m.Payload)
 						return
 					}
-					var feeLevel spvwallet.FeeLevel
+					var feeLevel wallet.FeeLevel
 					switch strings.ToLower(p.FeeLevel) {
 					case "priority":
-						feeLevel = spvwallet.PRIOIRTY
+						feeLevel = wallet.PRIOIRTY
 					case "normal":
-						feeLevel = spvwallet.NORMAL
+						feeLevel = wallet.NORMAL
 					case "economic":
-						feeLevel = spvwallet.ECONOMIC
+						feeLevel = wallet.ECONOMIC
 					default:
-						feeLevel = spvwallet.NORMAL
+						feeLevel = wallet.NORMAL
 					}
-					addr, err := btcutil.DecodeAddress(p.Address, wallet.Params())
+					addr, err := btcutil.DecodeAddress(p.Address, cashWallet.Params())
 					if err != nil {
 						w.Send(bootstrap.MessageOut{Name: "spendError", Payload: "Invalid address"})
 						return
 					}
-					_, err = wallet.Spend(int64(p.Amount), addr, feeLevel)
+					_, err = cashWallet.Spend(int64(p.Amount), addr, feeLevel)
 					if err != nil {
 						w.Send(bootstrap.MessageOut{Name: "spendError", Payload: err.Error()})
 					}
@@ -459,7 +459,7 @@ func (x *Start) Execute(args []string) error {
 					}
 					open.Run(url)
 				case "resync":
-					wallet.ReSyncBlockchain(config.CreationDate)
+					cashWallet.ReSyncBlockchain(config.CreationDate)
 				case "importKey":
 					type P struct {
 						Key  string `json:"key"`
@@ -488,12 +488,12 @@ func (x *Start) Execute(args []string) error {
 						}
 						privKey, _ = btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
 					}
-					wallet.ImportKey(privKey, compress)
+					cashWallet.ImportKey(privKey, compress)
 					var t time.Time
 					if p.Date != "" {
 						t, _ = time.Parse("2006-01-2", p.Date)
 					}
-					wallet.ReSyncBlockchain(t)
+					cashWallet.ReSyncBlockchain(t)
 				case "restore":
 					type P struct {
 						Mnemonic string `json:"mnemonic"`
@@ -509,21 +509,21 @@ func (x *Start) Execute(args []string) error {
 						t, _ = time.Parse("2006-01-2", p.Date)
 					}
 
-					wallet.Close()
+					cashWallet.Close()
 					os.Remove(path.Join(config.RepoPath, "wallet.db"))
 					os.Remove(path.Join(config.RepoPath, "headers.bin"))
 					sqliteDatastore, _ := db.Create(config.RepoPath)
 					config.DB = sqliteDatastore
 					config.Mnemonic = p.Mnemonic
 					config.CreationDate = t
-					wallet, err = bc.NewSPVWallet(config)
+					cashWallet, err = bc.NewSPVWallet(config)
 					if err != nil {
 						astilog.Errorf("Unmarshaling %s failed", m.Payload)
 						return
 					}
 					sqliteDatastore.SetMnemonic(p.Mnemonic)
 					sqliteDatastore.SetCreationDate(t)
-					go wallet.Start()
+					go cashWallet.Start()
 				case "minimize":
 					go func() {
 						w.Hide()
@@ -533,13 +533,13 @@ func (x *Start) Execute(args []string) error {
 					go func() {
 						rc <- 649
 					}()
-					txs, err := wallet.Transactions()
+					txs, err := cashWallet.Transactions()
 					if err != nil {
 						w.Send(bootstrap.MessageOut{Name: "txError", Payload: err.Error()})
 					}
 					w.Send(bootstrap.MessageOut{Name: "transactions", Payload: txs})
 				case "getTransactions":
-					txs, err := wallet.Transactions()
+					txs, err := cashWallet.Transactions()
 					if err != nil {
 						w.Send(bootstrap.MessageOut{Name: "txError", Payload: err.Error()})
 					}
@@ -553,7 +553,7 @@ func (x *Start) Execute(args []string) error {
 						rc <- 649
 					}()
 				case "getMnemonic":
-					w.Send(bootstrap.MessageOut{Name: "mnemonic", Payload: wallet.Mnemonic()})
+					w.Send(bootstrap.MessageOut{Name: "mnemonic", Payload: cashWallet.Mnemonic()})
 				}
 			},
 			RestoreAssets: gui.RestoreAssets,
@@ -572,13 +572,13 @@ func (x *Start) Execute(args []string) error {
 			ResizeChan:        rc,
 			TransactionChan:   txc,
 			BaseDirectoryPath: basepath,
-			Wallet:            wallet,
+			Wallet:            cashWallet,
 			//Debug:             true,
 		}); err != nil {
 			astilog.Fatal(err)
 		}
 	} else {
-		wallet.Start()
+		cashWallet.Start()
 	}
 	return nil
 }
