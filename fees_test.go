@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"net/http"
 	"testing"
-	"github.com/OpenBazaar/spvwallet"
 	"github.com/OpenBazaar/wallet-interface"
 )
 

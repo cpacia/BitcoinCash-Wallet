@@ -9,10 +9,11 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"github.com/OpenBazaar/wallet-interface"
 )
 
 var uxdb UtxoDB
-var utxo spvwallet.Utxo
+var utxo wallet.Utxo
 
 func init() {
 	conn, _ := sql.Open("sqlite3", ":memory:")
@@ -23,7 +24,7 @@ func init() {
 	}
 	sh1, _ := chainhash.NewHashFromStr("e941e1c32b3dd1a68edc3af9f7fe711f35aaca60f758c2dd49561e45ca2c41c0")
 	outpoint := wire.NewOutPoint(sh1, 0)
-	utxo = spvwallet.Utxo{
+	utxo = wallet.Utxo{
 		Op:           *outpoint,
 		AtHeight:     300000,
 		Value:        100000000,
