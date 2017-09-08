@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 	"github.com/OpenBazaar/wallet-interface"
+	"github.com/cpacia/bchutil"
 )
 
 type SPVWallet struct {
@@ -47,6 +48,12 @@ type SPVWallet struct {
 	running bool
 
 	config *PeerManagerConfig
+}
+
+func init() {
+	chaincfg.MainNetParams.Net = bchutil.MainnetMagic
+	chaincfg.TestNet3Params.Net = bchutil.TestnetMagic
+	chaincfg.RegressionNetParams.Net = bchutil.Regtestmagic
 }
 
 var log = logging.MustGetLogger("bitcoin")
