@@ -7,7 +7,7 @@
 <body>
     <div class="flex actionBar">
         <div class="tab flex">
-            <img class="icon" src="icon.png">
+            <img class="cashicon" src="icon.png">
             <div id="exchangeRate" class="tabText"></div>
         </div>
         <div class="tab flex">
@@ -68,7 +68,7 @@
                     <input id="amount" type="number" placeholder="0.00" class="input">
                     <select id="amountType" class="currencySelect" onChange="onCurrencyChange(this.selectedIndex);">
                         <option value="fiat">USD</option>
-                        <option value="bitcoin">BTC</option>
+                        <option value="bitcoin">BCH</option>
                     </select>
                 </div>
             </div>
@@ -151,8 +151,8 @@
         <div class="setting flex">
             <div class="settingLabel">Bitcoin Unit</div>
             <select id="bitcoinUnitSetting" class="settingSelect" onclick="onBitcoinUnitChange(this.selectedIndex);">
-                <option value="BTC">BTC</option>
-                <option value="mBTC">mBTC</option>
+                <option value="BCH">BCH</option>
+                <option value="mBCH">mBCH</option>
                 <option value="bits">bits</option>
                 <option value="satoshi">satoshi</option>
             </select>
@@ -334,6 +334,7 @@
             switch (message.name) {
                 case "settings":
                     settings = JSON.parse(message.payload);
+                    console.log(settings);
                     var selectBox = document.getElementById('amountType');
                     selectBox.options[0].text = settings.fiatCode;
                     selectBox.options[1].text = settings.bitcoinUnit;
@@ -363,7 +364,7 @@
                     break;
                 case "address":
                     qr.clear();
-                    qr.makeCode("bitcoin:" + message.payload);
+                    qr.makeCode("bitcoincash:" + message.payload);
                     document.getElementById("displayAddress").innerHTML = message.payload;
                     break;
                 case "spendError":
@@ -495,10 +496,10 @@
     function satoshiToBTCUnit(satoshis) {
         var satoshisPerUnit;
         switch(settings.bitcoinUnit) {
-            case "BTC":
+            case "BCH":
                 satoshisPerUnit = 100000000;
                 break;
-            case "mBTC":
+            case "mBCH":
                 satoshisPerUnit = 100000;
                 break;
             case "bits":
@@ -722,10 +723,10 @@
         var satoshis;
         if (amountType == "bitcoin") {
             switch(settings.bitcoinUnit) {
-                case "BTC":
+                case "BCH":
                     satoshis = amount * 100000000;
                     break;
-                case "mBTC":
+                case "mBCH":
                     satoshis = amount * 100000;
                     break;
                 case "bits":
@@ -818,10 +819,11 @@
     function onBitcoinUnitChange(idx) {
         var e = document.getElementById("bitcoinUnitSetting");
         var unit = e.options[idx].value;
+        console.log(unit);
         settings.bitcoinUnit = unit;
 
         var at = document.getElementById("amountType");
-        var amountType = at.options[1].text = unit;
+        at.options[1].text = unit;
 
         astilectron.send({name: "putSettings", payload: JSON.stringify(settings)});
         astilectron.send({name: "getStats", payload: {currencyCode: settings.fiatCode}});

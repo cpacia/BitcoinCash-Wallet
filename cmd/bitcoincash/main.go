@@ -214,7 +214,7 @@ func (x *Start) Execute(args []string) error {
 			FiatSymbol:    "$",
 			FeeLevel:      "priority",
 			SelectBox:     "bitcoin",
-			BitcoinUnit:   "BTC",
+			BitcoinUnit:   "BCH",
 			DecimalPlaces: 5,
 			Fees: Fees{
 				Priority: config.HighFee,
@@ -237,6 +237,12 @@ func (x *Start) Execute(args []string) error {
 		err := json.Unmarshal([]byte(s), &settings)
 		if err != nil {
 			return err
+		}
+		switch(settings.BitcoinUnit) {
+		case "BTC":
+			settings.BitcoinUnit = "BCH"
+		case "mBTC":
+			settings.BitcoinUnit = "mBCH"
 		}
 	}
 	if settings.TrustedPeer != "" {
@@ -450,7 +456,24 @@ func (x *Start) Execute(args []string) error {
 					if err != nil {
 						astilog.Error(err.Error())
 					}
-					w.Send(bootstrap.MessageOut{Name: "settings", Payload: string(settings)})
+
+					var set Settings
+					err = json.Unmarshal(settings, &set)
+					if err != nil {
+						astilog.Error(err.Error())
+					}
+
+					switch(set.BitcoinUnit) {
+					case "BTC":
+						set.BitcoinUnit = "BCH"
+					case "mBTC":
+						set.BitcoinUnit = "mBCH"
+					}
+					ret, err := json.MarshalIndent(set, "", "    ")
+					if err != nil {
+						astilog.Error(err.Error())
+					}
+					w.Send(bootstrap.MessageOut{Name: "settings", Payload: string(ret)})
 				case "openbrowser":
 					var url string
 					if err := json.Unmarshal(m.Payload, &url); err != nil {
