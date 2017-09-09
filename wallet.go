@@ -58,7 +58,7 @@ func init() {
 
 var log = logging.MustGetLogger("bitcoin")
 
-const WALLET_VERSION = "0.2.0"
+const WALLET_VERSION = "0.3.0"
 
 func NewSPVWallet(config *Config) (*SPVWallet, error) {
 
