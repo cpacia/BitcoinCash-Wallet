@@ -186,6 +186,9 @@ func (x *Start) Execute(args []string) error {
 	f.Write([]byte("1"))
 	f.Close()
 
+	exchangeRates := exchangerates.NewBitcoinCashPriceFetcher(config.Proxy)
+	config.ExchangeRateProvider = exchangeRates
+
 	// Load settings
 	type Fees struct {
 		Priority      uint64 `json:"priority"`
@@ -300,8 +303,6 @@ func (x *Start) Execute(args []string) error {
 
 	if x.Gui {
 		go cashWallet.Start()
-
-		exchangeRates := exchangerates.NewBitcoinCashPriceFetcher(config.Proxy)
 
 		type Stats struct {
 			Confirmed    int64  `json:"confirmed"`

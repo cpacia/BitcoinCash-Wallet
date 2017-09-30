@@ -98,7 +98,7 @@ func NewSPVWallet(config *Config) (*SPVWallet, error) {
 			config.HighFee,
 			config.MediumFee,
 			config.LowFee,
-			nil,
+			config.ExchangeRateProvider,
 		),
 		fPositives:    make(chan *peer.Peer),
 		stopChan:      make(chan int),

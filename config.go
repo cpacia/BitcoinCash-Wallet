@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"time"
 	"github.com/OpenBazaar/wallet-interface"
+	"github.com/OpenBazaar/openbazaar-go/bitcoin"
 )
 
 type Config struct {
@@ -56,6 +57,9 @@ type Config struct {
 
 	// A logger. You can write the logs to file or stdout or however else you want.
 	Logger logging.Backend
+
+	// An exchange rate provider implementation for Bitcoin Cash
+	ExchangeRateProvider bitcoin.ExchangeRates
 }
 
 func NewDefaultConfig() *Config {
