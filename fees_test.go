@@ -2,7 +2,6 @@ package bitcoincash
 
 import (
 	"bytes"
-	"net/http"
 	"testing"
 	"github.com/OpenBazaar/wallet-interface"
 )
@@ -15,21 +14,60 @@ func (cb *ClosingBuffer) Close() (err error) {
 	return
 }
 
-type mockHttpClient struct{}
+type mockExchangeRate struct{}
 
-func (m *mockHttpClient) Get(url string) (*http.Response, error) {
-	data := `{"fastestFee":450,"halfHourFee":420,"hourFee":390}`
-	cb := &ClosingBuffer{bytes.NewBufferString(data)}
-	resp := &http.Response{
-		Body: cb,
-	}
-	return resp, nil
+var returnRate float64 = 438
+
+func (m *mockExchangeRate) GetExchangeRate(currencyCode string) (float64, error) {
+	return 0, nil
+}
+
+func (m *mockExchangeRate) GetLatestRate(currencyCode string) (float64, error) {
+	return returnRate, nil
+}
+
+func (m *mockExchangeRate) GetAllRates() (map[string]float64, error) {
+	return make(map[string]float64), nil
+}
+
+func (m *mockExchangeRate) UnitsPerCoin() int {
+	return 0
 }
 
 func TestFeeProvider_GetFeePerByte(t *testing.T) {
-	fp := NewFeeProvider(2000, 360, 320, 280, nil)
+	fp := NewFeeProvider(2000, 360, 320, 280, &mockExchangeRate{})
 
-	// Test no API provided
+	// Test using exchange rates
+	if fp.GetFeePerByte(wallet.PRIOIRTY) != 101 {
+		t.Error("Returned incorrect fee per byte")
+	}
+	if fp.GetFeePerByte(wallet.NORMAL) != 50 {
+		t.Error("Returned incorrect fee per byte")
+	}
+	if fp.GetFeePerByte(wallet.ECONOMIC) != 10 {
+		t.Error("Returned incorrect fee per byte")
+	}
+	if fp.GetFeePerByte(wallet.FEE_BUMP) != 202 {
+		t.Error("Returned incorrect fee per byte")
+	}
+
+	// Test exchange rate is limited at max if bad exchange rate is returned
+	returnRate = 0.1
+	if fp.GetFeePerByte(wallet.PRIOIRTY) != 2000 {
+		t.Error("Returned incorrect fee per byte")
+	}
+	if fp.GetFeePerByte(wallet.NORMAL) != 2000 {
+		t.Error("Returned incorrect fee per byte")
+	}
+	if fp.GetFeePerByte(wallet.ECONOMIC) != 2000 {
+		t.Error("Returned incorrect fee per byte")
+	}
+	if fp.GetFeePerByte(wallet.FEE_BUMP) != 2000 {
+		t.Error("Returned incorrect fee per byte")
+	}
+
+	// Test no Exchange rate provided
+	fp.exchangeRates = nil
 	if fp.GetFeePerByte(wallet.PRIOIRTY) != 360 {
 		t.Error("Returned incorrect fee per byte")
 	}

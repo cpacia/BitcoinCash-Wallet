@@ -1,11 +1,10 @@
 package bitcoincash
 
 import (
-	"golang.org/x/net/proxy"
-	"net"
 	"net/http"
 	"time"
 	"github.com/OpenBazaar/wallet-interface"
+	"github.com/OpenBazaar/openbazaar-go/bitcoin"
 )
 
 type httpClient interface {
@@ -29,27 +28,31 @@ type FeeProvider struct {
 	normalFee   uint64
 	economicFee uint64
 
-	httpClient httpClient
+	exchangeRates bitcoin.ExchangeRates
 
 	cache *feeCache
 }
 
-func NewFeeProvider(maxFee, priorityFee, normalFee, economicFee uint64, proxy proxy.Dialer) *FeeProvider {
-	fp := FeeProvider{
+// We will target a fee per byte such that it would equal
+// 1 USD cent for economic, 5 USD cents for normal and
+// 10 USD cents for priority for a median (226 byte) transaction.
+type FeeTarget int
+
+const (
+	EconomicTarget FeeTarget = 1
+	NormalTarget FeeTarget = 5
+	PriorityTarget FeeTarget = 10
+)
+
+func NewFeeProvider(maxFee, priorityFee, normalFee, economicFee uint64, exchangeRates bitcoin.ExchangeRates) *FeeProvider {
+	return &FeeProvider{
 		maxFee:      maxFee,
 		priorityFee: priorityFee,
 		normalFee:   normalFee,
 		economicFee: economicFee,
+		exchangeRates: exchangeRates,
 		cache:       new(feeCache),
 	}
-	dial := net.Dial
-	if proxy != nil {
-		dial = proxy.Dial
-	}
-	tbTransport := &http.Transport{Dial: dial}
-	httpClient := &http.Client{Transport: tbTransport, Timeout: time.Second * 10}
-	fp.httpClient = httpClient
-	return &fp
 }
 
 func (fp *FeeProvider) GetFeePerByte(feeLevel wallet.FeeLevel) uint64 {
@@ -67,5 +70,36 @@ func (fp *FeeProvider) GetFeePerByte(feeLevel wallet.FeeLevel) uint64 {
 			return fp.normalFee
 		}
 	}
-	return defaultFee()
+	if fp.exchangeRates == nil {
+		return defaultFee()
+	}
+
+	rate, err := fp.exchangeRates.GetLatestRate("USD")
+	if err != nil || rate == 0 {
+		log.Errorf("Error using exchange rate to calculate fee: %s\n", err.Error())
+		return defaultFee()
+	}
+
+	var target FeeTarget
+	switch feeLevel {
+	case wallet.PRIOIRTY:
+		target = PriorityTarget
+	case wallet.NORMAL:
+		target = NormalTarget
+	case wallet.ECONOMIC:
+		target = EconomicTarget
+	case wallet.FEE_BUMP:
+		target = PriorityTarget * 2
+	default:
+		target = NormalTarget
+	}
+
+	feePerByte := (((float64(target)/100) / rate) * 100000000) / 226
+
+	if uint64(feePerByte) > fp.maxFee {
+		return fp.maxFee
+	}
+
+
+	return uint64(feePerByte)
 }
