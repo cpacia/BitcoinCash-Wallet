@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/OpenBazaar/wallet-interface"
 	"github.com/asticode/go-astilectron"
 	"github.com/asticode/go-astilog"
 	"github.com/atotto/clipboard"
@@ -33,7 +34,6 @@ import (
 	"path"
 	"strings"
 	"time"
-	"github.com/OpenBazaar/wallet-interface"
 )
 
 var parser = flags.NewParser(nil, flags.Default)
@@ -188,10 +188,11 @@ func (x *Start) Execute(args []string) error {
 
 	// Load settings
 	type Fees struct {
-		Priority uint64 `json:"priority"`
-		Normal   uint64 `json:"normal"`
-		Economic uint64 `json:"economic"`
-		FeeAPI   string `json:"feeAPI"`
+		Priority      uint64 `json:"priority"`
+		Normal        uint64 `json:"normal"`
+		Economic      uint64 `json:"economic"`
+		MaxFee        uint64 `json:"maxFee"`
+		feeEstimation bool   `json:"feeEstimation"`
 	}
 
 	type Settings struct {
@@ -220,7 +221,6 @@ func (x *Start) Execute(args []string) error {
 				Priority: config.HighFee,
 				Normal:   config.MediumFee,
 				Economic: config.LowFee,
-				FeeAPI:   config.FeeAPI.String(),
 			},
 		}
 		f, err := os.Create(path.Join(basepath, "settings.json"))
@@ -238,7 +238,7 @@ func (x *Start) Execute(args []string) error {
 		if err != nil {
 			return err
 		}
-		switch(settings.BitcoinUnit) {
+		switch settings.BitcoinUnit {
 		case "BTC":
 			settings.BitcoinUnit = "BCH"
 		case "mBTC":
@@ -265,8 +265,6 @@ func (x *Start) Execute(args []string) error {
 		}
 		config.Proxy = tbDialer
 	}
-	feeApi, _ := url.Parse(settings.Fees.FeeAPI)
-	config.FeeAPI = *feeApi
 	config.HighFee = settings.Fees.Priority
 	config.MediumFee = settings.Fees.Normal
 	config.LowFee = settings.Fees.Economic
@@ -463,7 +461,7 @@ func (x *Start) Execute(args []string) error {
 						astilog.Error(err.Error())
 					}
 
-					switch(set.BitcoinUnit) {
+					switch set.BitcoinUnit {
 					case "BTC":
 						set.BitcoinUnit = "BCH"
 					case "mBTC":

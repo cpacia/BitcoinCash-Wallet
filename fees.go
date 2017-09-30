@@ -1,7 +1,6 @@
 package bitcoincash
 
 import (
-	"encoding/json"
 	"golang.org/x/net/proxy"
 	"net"
 	"net/http"
@@ -29,20 +28,18 @@ type FeeProvider struct {
 	priorityFee uint64
 	normalFee   uint64
 	economicFee uint64
-	feeAPI      string
 
 	httpClient httpClient
 
 	cache *feeCache
 }
 
-func NewFeeProvider(maxFee, priorityFee, normalFee, economicFee uint64, feeAPI string, proxy proxy.Dialer) *FeeProvider {
+func NewFeeProvider(maxFee, priorityFee, normalFee, economicFee uint64, proxy proxy.Dialer) *FeeProvider {
 	fp := FeeProvider{
 		maxFee:      maxFee,
 		priorityFee: priorityFee,
 		normalFee:   normalFee,
 		economicFee: economicFee,
-		feeAPI:      feeAPI,
 		cache:       new(feeCache),
 	}
 	dial := net.Dial
@@ -70,53 +67,5 @@ func (fp *FeeProvider) GetFeePerByte(feeLevel wallet.FeeLevel) uint64 {
 			return fp.normalFee
 		}
 	}
-	if fp.feeAPI == "" {
-		return defaultFee()
-	}
-	fees := new(Fees)
-	if time.Since(fp.cache.lastUpdated) > time.Minute {
-		resp, err := fp.httpClient.Get(fp.feeAPI)
-		if err != nil {
-			return defaultFee()
-		}
-
-		defer resp.Body.Close()
-
-		err = json.NewDecoder(resp.Body).Decode(&fees)
-		if err != nil {
-			return defaultFee()
-		}
-		fp.cache.lastUpdated = time.Now()
-		fp.cache.fees = fees
-	} else {
-		fees = fp.cache.fees
-	}
-	switch feeLevel {
-	case wallet.PRIOIRTY:
-		if fees.FastestFee > fp.maxFee || fees.FastestFee == 0 {
-			return fp.maxFee
-		} else {
-			return fees.FastestFee
-		}
-	case wallet.NORMAL:
-		if fees.HalfHourFee > fp.maxFee || fees.HalfHourFee == 0 {
-			return fp.maxFee
-		} else {
-			return fees.HalfHourFee
-		}
-	case wallet.ECONOMIC:
-		if fees.HourFee > fp.maxFee || fees.HourFee == 0 {
-			return fp.maxFee
-		} else {
-			return fees.HourFee
-		}
-	case wallet.FEE_BUMP:
-		if (fees.FastestFee*2) > fp.maxFee || fees.FastestFee == 0 {
-			return fp.maxFee
-		} else {
-			return fees.FastestFee * 2
-		}
-	default:
-		return fp.normalFee
-	}
+	return defaultFee()
 }
