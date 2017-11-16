@@ -1,10 +1,10 @@
 package bitcoincash
 
 import (
+	"github.com/OpenBazaar/wallet-interface"
 	"github.com/btcsuite/btcd/chaincfg"
 	hd "github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/btcsuite/goleveldb/leveldb/errors"
-	"github.com/OpenBazaar/wallet-interface"
 )
 
 const LOOKAHEADWINDOW = 100
@@ -117,22 +117,6 @@ func (km *KeyManager) GetKeys() []*hd.ExtendedKey {
 			continue
 		}
 		keys = append(keys, k)
-	}
-	importedKeys, err := km.datastore.GetImported()
-	if err != nil {
-		return keys
-	}
-	for _, ik := range importedKeys {
-		hdKey := hd.NewExtendedKey(
-			km.params.HDPrivateKeyID[:],
-			ik.Serialize(),
-			make([]byte, 32),
-			[]byte{0x00, 0x00, 0x00, 0x00},
-			0,
-			0,
-			true,
-		)
-		keys = append(keys, hdKey)
 	}
 	return keys
 }

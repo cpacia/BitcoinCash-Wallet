@@ -133,7 +133,7 @@ func SetupCli(parser *flags.Parser) {
 			"3. feelevel      (string default=normal) The fee level: economic, normal, priority\n\n"+
 			"Examples:\n"+
 			"> spvwallet spend 1DxGWC22a46VPEjq8YKoeVXSLzB7BA8sJS 1000000\n"+
-			"82bfd45f3564e0b5166ab9ca072200a237f78499576e9658b20b0ccd10ff325c"+
+			"82bfd45f3564e0b5166ab9ca072200a237f78499576e9658b20b0ccd10ff325c\n"+
 			"> spvwallet spend 1DxGWC22a46VPEjq8YKoeVXSLzB7BA8sJS 3000000000 priority\n"+
 			"82bfd45f3564e0b5166ab9ca072200a237f78499576e9658b20b0ccd10ff325c",
 		&spend)

@@ -2,6 +2,7 @@ package bitcoincash
 
 import (
 	"errors"
+	"github.com/OpenBazaar/wallet-interface"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -13,13 +14,16 @@ import (
 	"github.com/op/go-logging"
 	b39 "github.com/tyler-smith/go-bip39"
 	"io"
-	"os"
-	"path"
 	"sync"
 	"time"
-	"github.com/OpenBazaar/wallet-interface"
 	"github.com/cpacia/bchutil"
 )
+
+func init() {
+	chaincfg.MainNetParams.Net = bchutil.MainnetMagic
+	chaincfg.TestNet3Params.Net = bchutil.TestnetMagic
+	chaincfg.RegressionNetParams.Net = bchutil.Regtestmagic
+}
 
 type SPVWallet struct {
 	params *chaincfg.Params
@@ -50,15 +54,9 @@ type SPVWallet struct {
 	config *PeerManagerConfig
 }
 
-func init() {
-	chaincfg.MainNetParams.Net = bchutil.MainnetMagic
-	chaincfg.TestNet3Params.Net = bchutil.TestnetMagic
-	chaincfg.RegressionNetParams.Net = bchutil.Regtestmagic
-}
-
 var log = logging.MustGetLogger("bitcoin")
 
-const WALLET_VERSION = "0.3.0"
+const WALLET_VERSION = "0.1.0"
 
 func NewSPVWallet(config *Config) (*SPVWallet, error) {
 
@@ -123,6 +121,7 @@ func NewSPVWallet(config *Config) (*SPVWallet, error) {
 		OnInv:         w.onInv,
 		OnTx:          w.onTx,
 		OnGetData:     w.onGetData,
+		OnReject:      w.onReject,
 	}
 
 	getNewestBlock := func() (*chainhash.Hash, int32, error) {
@@ -182,6 +181,10 @@ func (w *SPVWallet) CurrencyCode() string {
 	}
 }
 
+func (w *SPVWallet) CreationDate() time.Time {
+	return w.creationDate
+}
+
 func (w *SPVWallet) IsDust(amount int64) bool {
 	return txrules.IsDustAmount(btc.Amount(amount), 25, txrules.DefaultRelayFeePerKb)
 }
@@ -196,10 +199,6 @@ func (w *SPVWallet) MasterPublicKey() *hd.ExtendedKey {
 
 func (w *SPVWallet) Mnemonic() string {
 	return w.mnemonic
-}
-
-func (w *SPVWallet) CreationDate() time.Time {
-	return w.creationDate
 }
 
 func (w *SPVWallet) ConnectedPeers() []*peer.Peer {
@@ -248,22 +247,6 @@ func (w *SPVWallet) HasKey(addr btc.Address) bool {
 	return true
 }
 
-func (w *SPVWallet) ImportKey(privKey *btcec.PrivateKey, compress bool) error {
-	pub := privKey.PubKey()
-	var pubKeyBytes []byte
-	if compress {
-		pubKeyBytes = pub.SerializeCompressed()
-	} else {
-		pubKeyBytes = pub.SerializeUncompressed()
-	}
-	pkHash := btc.Hash160(pubKeyBytes)
-	addr, err := btc.NewAddressPubKeyHash(pkHash, w.params)
-	if err != nil {
-		return err
-	}
-	return w.keyManager.datastore.ImportKey(addr.ScriptAddress(), privKey)
-}
-
 func (w *SPVWallet) GetKey(addr btc.Address) (*btcec.PrivateKey, error) {
 	key, err := w.keyManager.GetKeyForScript(addr.ScriptAddress())
 	if err != nil {
@@ -296,6 +279,22 @@ func (w *SPVWallet) ListKeys() []btcec.PrivateKey {
 		list = append(list, *priv)
 	}
 	return list
+}
+
+func (w *SPVWallet) ImportKey(privKey *btcec.PrivateKey, compress bool) error {
+	pub := privKey.PubKey()
+	var pubKeyBytes []byte
+	if compress {
+		pubKeyBytes = pub.SerializeCompressed()
+	} else {
+		pubKeyBytes = pub.SerializeUncompressed()
+	}
+	pkHash := btc.Hash160(pubKeyBytes)
+	addr, err := btc.NewAddressPubKeyHash(pkHash, w.params)
+	if err != nil {
+		return err
+	}
+	return w.keyManager.datastore.ImportKey(addr.ScriptAddress(), privKey)
 }
 
 func (w *SPVWallet) Balance() (confirmed, unconfirmed int64) {
@@ -401,17 +400,14 @@ func (w *SPVWallet) Close() {
 }
 
 func (w *SPVWallet) ReSyncBlockchain(fromDate time.Time) {
-	w.Close()
-	os.Remove(path.Join(w.repoPath, "headers.bin"))
-	blockchain, err := NewBlockchain(w.repoPath, fromDate, w.params)
-	if err != nil {
-		return
-	}
-	w.blockchain = blockchain
+	w.peerManager.Stop()
+	w.blockchain.Rollback(fromDate)
+	w.blockchain.SetChainState(SYNCING)
 	w.txstore.PopulateAdrs()
+	var err error
 	w.peerManager, err = NewPeerManager(w.config)
 	if err != nil {
 		return
 	}
-	go w.Start()
+	go w.peerManager.Start()
 }

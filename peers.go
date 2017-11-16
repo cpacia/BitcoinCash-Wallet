@@ -2,6 +2,11 @@ package bitcoincash
 
 import (
 	"errors"
+	"net"
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/btcsuite/btcd/addrmgr"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -9,12 +14,8 @@ import (
 	"github.com/btcsuite/btcd/peer"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil/bloom"
-	"github.com/cpacia/bchutil"
 	"golang.org/x/net/proxy"
-	"net"
-	"strconv"
-	"sync"
-	"time"
+	"github.com/cpacia/bchutil"
 )
 
 var (
@@ -111,8 +112,8 @@ func NewPeerManager(config *PeerManagerConfig) (*PeerManager, error) {
 		trustedPeer:        config.TrustedPeer,
 		getFilter:          config.GetFilter,
 		startChainDownload: config.StartChainDownload,
-		blockQueue:         make(chan chainhash.Hash, 32),
 		proxy:              config.Proxy,
+		blockQueue:         make(chan chainhash.Hash, 32),
 	}
 
 	targetOutbound := config.TargetOutbound
@@ -211,7 +212,7 @@ func (pm *PeerManager) onConnection(req *connmgr.ConnReq, conn net.Conn) {
 		return
 	}
 
-	// Add to connected peers
+	// Add to open peers
 	pm.openPeers[req.ID()] = p
 
 	// Associate the connection with the peer
@@ -230,9 +231,7 @@ func (pm *PeerManager) onConnection(req *connmgr.ConnReq, conn net.Conn) {
 func (pm *PeerManager) onVerack(p *peer.Peer, msg *wire.MsgVerAck) {
 	// Check this peer offers bloom filtering services. If not dump them.
 	p.NA().Services = p.Services()
-	if !(p.NA().HasService(wire.SFNodeBloom) &&
-		p.NA().HasService(wire.SFNodeNetwork) &&
-		p.NA().HasService(bchutil.SFNodeBitcoinCash)) {
+	if !(p.NA().HasService(wire.SFNodeBloom) && p.NA().HasService(wire.SFNodeNetwork) && p.NA().HasService(bchutil.SFNodeBitcoinCash)) {
 		// onDisconnection will be called
 		// which will remove the peer from openPeers
 		p.Disconnect()
@@ -281,14 +280,14 @@ func (pm *PeerManager) onDisconnection(req *connmgr.ConnReq) {
 }
 
 func (pm *PeerManager) selectNewDownloadPeer() {
-	for _, peer := range pm.ReadyPeers() {
+	for peer := range pm.readyPeers {
 		pm.setDownloadPeer(peer)
 		break
 	}
 }
 
 func (pm *PeerManager) setDownloadPeer(peer *peer.Peer) {
-	log.Infof("Setting peer%d as download peer\n", peer.ID())
+	log.Infof("Setting peer%d (%s) as download peer\n", peer.ID(), peer.UserAgent())
 	pm.downloadPeer = peer
 	if pm.startChainDownload != nil {
 		pm.blockQueue = make(chan chainhash.Hash, 32)
@@ -330,7 +329,7 @@ func (pm *PeerManager) CheckForMoreBlocks(height uint32) bool {
 	defer pm.peerMutex.RUnlock()
 
 	moar := false
-	for _, peer := range pm.ReadyPeers() {
+	for peer := range pm.readyPeers {
 		if uint32(peer.LastBlock()) > height {
 			pm.downloadPeer = peer
 			go pm.startChainDownload(peer)
@@ -345,7 +344,7 @@ func (pm *PeerManager) getNewAddress() (net.Addr, error) {
 	if pm.trustedPeer == nil {
 		ka := pm.addrManager.GetAddress()
 		if ka == nil {
-			return &net.TCPAddr{}, errors.New("Nil address returned by address manager")
+			return &net.TCPAddr{}, errors.New("Adder manager returned nil address")
 		}
 		knownAddress := ka.NetAddress()
 		addr := &net.TCPAddr{
@@ -444,6 +443,7 @@ func (pm *PeerManager) Stop() {
 	for _, peer := range pm.openPeers {
 		wg.Add(1)
 		go func() {
+			// onDisconnection will be called.
 			peer.Disconnect()
 			peer.WaitForDisconnect()
 			wg.Done()

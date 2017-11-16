@@ -3,13 +3,13 @@ package bitcoincash
 import (
 	"bytes"
 	"encoding/hex"
+	"github.com/OpenBazaar/wallet-interface"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"testing"
-	"github.com/OpenBazaar/wallet-interface"
 )
 
 func createKeyManager() (*KeyManager, error) {

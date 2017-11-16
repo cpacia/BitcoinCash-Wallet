@@ -1,7 +1,12 @@
+// Copyright (C) 2015-2016 The Lightning Network Developers
+// Copyright (c) 2016-2017 The OpenBazaar Developers
+
 package bitcoincash
 
 import (
 	"bytes"
+	"errors"
+	"github.com/OpenBazaar/wallet-interface"
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -11,8 +16,6 @@ import (
 	"github.com/btcsuite/btcutil/bloom"
 	"sync"
 	"time"
-	"errors"
-	"github.com/OpenBazaar/wallet-interface"
 )
 
 type TxStore struct {
@@ -105,7 +108,7 @@ func (ts *TxStore) CheckDoubleSpends(argTx *wire.MsgTx) ([]*chainhash.Hash, erro
 		}
 		r := bytes.NewReader(compTx.Bytes)
 		msgTx := wire.NewMsgTx(1)
-		msgTx.BtcDecode(r, 1, wire.BaseEncoding)
+		msgTx.BtcDecode(r, 1, wire.WitnessEncoding)
 		compTxid := msgTx.TxHash()
 		for _, argIn := range argTx.TxIn {
 			// iterate through inputs of compTx
@@ -365,6 +368,7 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32) (uint32, error) {
 		}
 		ts.cbMutex.Unlock()
 		ts.PopulateAdrs()
+		hits++
 	}
 	return hits, err
 }

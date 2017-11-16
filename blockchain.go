@@ -1,7 +1,9 @@
+// Copyright (C) 2015-2016 The Lightning Network Developers
+// Copyright (c) 2016-2017 The OpenBazaar Developers
+
 package bitcoincash
 
 import (
-	"errors"
 	"fmt"
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -17,12 +19,7 @@ import (
 // chaincfg.Params so they'll go here.  If you're into the [ANN]altcoin scene,
 // you may want to paramaterize these constants.
 const (
-	targetTimespan      = time.Hour * 24 * 14
-	targetSpacing       = time.Minute * 10
-	epochLength         = int32(targetTimespan / targetSpacing) // 2016
-	maxDiffAdjust       = 4
-	minRetargetTimespan = int64(targetTimespan / maxDiffAdjust)
-	maxRetargetTimespan = int64(targetTimespan * maxDiffAdjust)
+	targetSpacing       = 600
 	medianTimeBlocks    = 11
 )
 
@@ -35,10 +32,12 @@ const (
 
 // Wrapper around Headers implementation that handles all blockchain operations
 type Blockchain struct {
-	lock   *sync.Mutex
-	params *chaincfg.Params
-	db     Headers
-	state  ChainState
+	lock        *sync.Mutex
+	params      *chaincfg.Params
+	db          Headers
+	state       ChainState
+	crationDate time.Time
+	checkpoint  Checkpoint
 }
 
 func NewBlockchain(filePath string, walletCreationDate time.Time, params *chaincfg.Params) (*Blockchain, error) {
@@ -47,19 +46,20 @@ func NewBlockchain(filePath string, walletCreationDate time.Time, params *chainc
 		return nil, err
 	}
 	b := &Blockchain{
-		lock:   new(sync.Mutex),
-		params: params,
-		db:     hdb,
+		lock:        new(sync.Mutex),
+		params:      params,
+		db:          hdb,
+		crationDate: walletCreationDate,
 	}
+	b.checkpoint = GetCheckpoint(walletCreationDate, params)
 
 	h, err := b.db.Height()
 	if h == 0 || err != nil {
 		log.Info("Initializing headers db with checkpoints")
-		checkpoint := GetCheckpoint(walletCreationDate, params)
 		// Put the checkpoint to the db
 		sh := StoredHeader{
-			header:    checkpoint.Header,
-			height:    checkpoint.Height,
+			header:    b.checkpoint.Header,
+			height:    b.checkpoint.Height,
 			totalWork: big.NewInt(0),
 		}
 		err := b.db.Put(sh, true)
@@ -73,7 +73,6 @@ func NewBlockchain(filePath string, walletCreationDate time.Time, params *chainc
 func (b *Blockchain) CommitHeader(header wire.BlockHeader) (bool, *StoredHeader, uint32, error) {
 	b.lock.Lock()
 	defer b.lock.Unlock()
-
 	newTip := false
 	var commonAncestor *StoredHeader
 	// Fetch our current best header from the db
@@ -94,12 +93,6 @@ func (b *Blockchain) CommitHeader(header wire.BlockHeader) (bool, *StoredHeader,
 			return false, nil, 0, fmt.Errorf("Header %s does not extend any known headers", header.BlockHash().String())
 		}
 	}
-
-	// Check to make sure we go onto the Bitcoin Cash fork
-	if parentHeader.height+1 == ForkHeight(b.params) && !IsForkBlock(b.params, header) {
-		return false, nil, 0, errors.New("Header is not hardcoded fork header")
-	}
-
 	valid := b.CheckHeader(header, parentHeader)
 	if !valid {
 		return false, nil, 0, nil
@@ -141,9 +134,21 @@ func (b *Blockchain) CommitHeader(header wire.BlockHeader) (bool, *StoredHeader,
 }
 
 func (b *Blockchain) CheckHeader(header wire.BlockHeader, prevHeader StoredHeader) bool {
+	height := prevHeader.height
+
+	// Due to the rolling difficulty period our checkpoint block consists of a block and a hash of a block 146 blocks later
+	// During this period we can skip the validity checks as long as block checkpoint + 146 matches the hardcoded hash.
+	if height + 1 <= b.checkpoint.Height + 146 {
+		h := header.BlockHash()
+		if b.checkpoint.Check2 != nil && height + 1 == b.checkpoint.Height + 146 && !b.checkpoint.Check2.IsEqual(&h){
+			return false
+		}
+		return true
+	}
+
+
 	// Get hash of n-1 header
 	prevHash := prevHeader.header.BlockHash()
-	height := prevHeader.height
 
 	// Check if headers link together.  That whole 'blockchain' thing.
 	if prevHash.IsEqual(&header.PrevBlock) == false {
@@ -152,15 +157,19 @@ func (b *Blockchain) CheckHeader(header wire.BlockHeader, prevHeader StoredHeade
 	}
 
 	// Check the header meets the difficulty requirement
-	if !b.params.ReduceMinDifficulty {
-		diffTarget, err := b.calcRequiredWork(header, int32(height+1), prevHeader)
+	if b.params.Name != chaincfg.RegressionNetParams.Name { // Don't need to check difficulty on regtest
+		diffTarget, err := b.calcRequiredWork(header, int32(height + 1), prevHeader)
 		if err != nil {
-			log.Errorf("Error calculating difficulty %s", err.Error())
+			log.Errorf("Error calclating difficulty", err)
 			return false
 		}
-		if header.Bits != diffTarget {
+		if header.Bits != diffTarget && b.params.Name == chaincfg.MainNetParams.Name {
 			log.Warningf("Block %d %s incorrect difficulty.  Read %d, expect %d\n",
-				height+1, header.BlockHash().String(), header.Bits, diffTarget)
+				height + 1, header.BlockHash().String(), header.Bits, diffTarget)
+			return false
+		} else if diffTarget == b.params.PowLimitBits && header.Bits > diffTarget && b.params.Name == chaincfg.TestNet3Params.Name {
+			log.Warningf("Block %d %s incorrect difficulty.  Read %d, expect %d\n",
+				height + 1, header.BlockHash().String(), header.Bits, diffTarget)
 			return false
 		}
 	}
@@ -177,75 +186,22 @@ func (b *Blockchain) CheckHeader(header wire.BlockHeader, prevHeader StoredHeade
 // Get the PoW target this block should meet. We may need to handle a difficulty adjustment
 // or testnet difficulty rules.
 func (b *Blockchain) calcRequiredWork(header wire.BlockHeader, height int32, prevHeader StoredHeader) (uint32, error) {
-	// If this is not a difficulty adjustment period
-	if height%epochLength != 0 {
-		// If we are on testnet
-		if b.params.ReduceMinDifficulty {
-			// If it's been more than 20 minutes since the last header return the minimum difficulty
-			if header.Timestamp.After(prevHeader.header.Timestamp.Add(targetSpacing * 2)) {
-				return b.params.PowLimitBits, nil
-			} else { // Otherwise return the difficulty of the last block not using special difficulty rules
-				for {
-					var err error = nil
-					for err == nil && int32(prevHeader.height)%epochLength != 0 && prevHeader.header.Bits == b.params.PowLimitBits {
-						var sh StoredHeader
-						sh, err = b.db.GetPreviousHeader(prevHeader.header)
-						// Error should only be non-nil if prevHeader is the checkpoint.
-						// In that case we should just return checkpoint bits
-						if err == nil {
-							prevHeader = sh
-						}
-
-					}
-					return prevHeader.header.Bits, nil
-				}
-			}
-		}
-
-		// Bitcoin cash special difficulty rules.
-		// If producing the last 6 block took more than 12h, increase the difficulty
-		// target by 1/4 (which reduces the difficulty by 20%). This ensure the
-		// chain do not get stuck in case we lose hashrate abruptly.
-		if uint32(height) >= ForkHeight(b.params) {
-			pindex6, err := b.GetAncestor(prevHeader, height-7)
-			if err != nil {
-				log.Error(err)
-				return 0, err
-			}
-			pindex6Mtp, err := b.CalcMedianTimePast(pindex6.header)
-			if err != nil {
-				log.Error(err)
-				return 0, err
-			}
-			pindexPrevMtp, err := b.CalcMedianTimePast(prevHeader.header)
-			if err != nil {
-				log.Error(err)
-				return 0, err
-			}
-			if pindexPrevMtp.Sub(pindex6Mtp) >= time.Hour*12 {
-				log.Noticef("Adjust difficulty down at height %d", height)
-				nPow := blockchain.CompactToBig(prevHeader.header.Bits)
-				shft := new(big.Int).Rsh(nPow, 2)
-				nPow.Add(nPow, shft)
-
-				// Make sure it doesn't go over limit
-				if nPow.Cmp(b.params.PowLimit) > 0 {
-					return blockchain.BigToCompact(b.params.PowLimit), nil
-				}
-				return blockchain.BigToCompact(nPow), nil
-			}
-		}
-
-		// Just return the bits from the last header
-		return prevHeader.header.Bits, nil
+	// Special difficulty rule for testnet
+	if b.params.ReduceMinDifficulty && header.Timestamp.After(prevHeader.header.Timestamp.Add(targetSpacing * 2)) {
+		return b.params.PowLimitBits, nil
 	}
-	// We are on a difficulty adjustment period so we need to correctly calculate the new difficulty.
-	epoch, err := b.GetEpoch()
+
+	suitableHeader, err := b.GetSuitableBlock(header)
 	if err != nil {
 		log.Error(err)
 		return 0, err
 	}
-	return calcDiffAdjust(*epoch, prevHeader.header, b.params), nil
+	epoch, err := b.GetEpoch(header)
+	if err != nil {
+		log.Error(err)
+		return 0, err
+	}
+	return calcDiffAdjust(epoch, suitableHeader, b.params), nil
 }
 
 func (b *Blockchain) CalcMedianTimePast(header wire.BlockHeader) (time.Time, error) {
@@ -268,32 +224,52 @@ func (b *Blockchain) CalcMedianTimePast(header wire.BlockHeader) (time.Time, err
 	return time.Unix(medianTimestamp, 0), nil
 }
 
-func (b *Blockchain) GetEpoch() (*wire.BlockHeader, error) {
-	sh, err := b.db.GetBestHeader()
-	if err != nil {
-		return &sh.header, err
-	}
-	for i := 0; i < 2015; i++ {
+// Rollsback and grabs block n-144, n-145, and n-146, sorts them by timestamps and returns the middle header.
+func (b *Blockchain) GetEpoch(hdr wire.BlockHeader) (StoredHeader, error) {
+	sh := StoredHeader{header: hdr}
+	var err error
+	for i := 0; i < 145; i++ {
 		sh, err = b.db.GetPreviousHeader(sh.header)
 		if err != nil {
-			return &sh.header, err
+			return sh, err
 		}
 	}
-	log.Debug("Epoch", sh.header.BlockHash().String())
-	return &sh.header, nil
+	oneFourtyFour := sh
+	sh, err = b.db.GetPreviousHeader(oneFourtyFour.header)
+	if err != nil {
+		return sh, err
+	}
+	oneFourtyFive := sh
+	sh, err = b.db.GetPreviousHeader(oneFourtyFive.header)
+	if err != nil {
+		return sh, err
+	}
+	oneFourtySix := sh
+	headers := []StoredHeader{oneFourtyFour, oneFourtyFive, oneFourtySix}
+	sort.Sort(blockSorter(headers))
+	return headers[1], nil
 }
 
-func (b *Blockchain) GetAncestor(prevHeader StoredHeader, height int32) (*StoredHeader, error) {
-	var err error
-	for {
-		prevHeader, err = b.db.GetPreviousHeader(prevHeader.header)
-		if err != nil {
-			return &prevHeader, err
-		}
-		if prevHeader.height == uint32(height) {
-			return &prevHeader, nil
-		}
+// Rollsback grabs the last two headers before this one. Sorts the three and returns the mid.
+func (b *Blockchain) GetSuitableBlock(hdr wire.BlockHeader) (StoredHeader, error) {
+	sh, err := b.db.GetPreviousHeader(hdr)
+	if err != nil {
+		return sh, err
 	}
+	one := sh
+	sh, err = b.db.GetPreviousHeader(one.header)
+	if err != nil {
+		return sh, err
+	}
+	two := sh
+	sh, err = b.db.GetPreviousHeader(two.header)
+	if err != nil {
+		return sh, err
+	}
+	three := sh
+	headers := []StoredHeader{one, two, three}
+	sort.Sort(blockSorter(headers))
+	return headers[1], nil
 }
 
 func (b *Blockchain) GetNPrevBlockHashes(n int) []*chainhash.Hash {
@@ -397,6 +373,51 @@ func (b *Blockchain) GetCommonAncestor(bestHeader, prevBestHeader StoredHeader) 
 	}
 }
 
+// Rollback the header database to the last header before time t.
+// We shouldn't go back further than the checkpoint
+func (b *Blockchain) Rollback(t time.Time) error {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+	checkpoint := GetCheckpoint(b.crationDate, b.params)
+	checkPointHash := checkpoint.Header.BlockHash()
+	sh, err := b.db.GetBestHeader()
+	if err != nil {
+		return err
+	}
+	// If t is greater than the timestamp at the tip then do nothing
+	if sh.header.Timestamp.Before(t) {
+		return nil
+	}
+	// If the tip is our checkpoint then do nothing
+	checkHash := sh.header.BlockHash()
+	if checkHash.IsEqual(&checkPointHash) {
+		return nil
+	}
+	rollbackHeight := uint32(0)
+	for i := 0; i < 1000000000; i++ {
+		sh, err = b.db.GetPreviousHeader(sh.header)
+		if err != nil {
+			return err
+		}
+		checkHash := sh.header.BlockHash()
+		// If we rolled back to the checkpoint then stop here and set the checkpoint as the tip
+		if checkHash.IsEqual(&checkPointHash) {
+			rollbackHeight = checkpoint.Height
+			break
+		}
+		// If we hit a header created before t then stop here and set this header as the tip
+		if sh.header.Timestamp.Before(t) {
+			rollbackHeight = sh.height
+			break
+		}
+	}
+	err = b.db.DeleteAfter(rollbackHeight)
+	if err != nil {
+		return err
+	}
+	return b.db.Put(sh, true)
+}
+
 func (b *Blockchain) ChainState() ChainState {
 	return b.state
 }
@@ -439,30 +460,31 @@ func checkProofOfWork(header wire.BlockHeader, p *chaincfg.Params) bool {
 // This function takes in a start and end block header and uses the timestamps in each
 // to calculate how much of a difficulty adjustment is needed. It returns a new compact
 // difficulty target.
-func calcDiffAdjust(start, end wire.BlockHeader, p *chaincfg.Params) uint32 {
-	duration := end.Timestamp.UnixNano() - start.Timestamp.UnixNano()
-	if duration < minRetargetTimespan {
-		log.Debugf("Whoa there, block %s off-scale high 4X diff adjustment!",
-			end.BlockHash().String())
-		duration = minRetargetTimespan
-	} else if duration > maxRetargetTimespan {
-		log.Debugf("Uh-oh! block %s off-scale low 0.25X diff adjustment!\n",
-			end.BlockHash().String())
-		duration = maxRetargetTimespan
+func calcDiffAdjust(start, end StoredHeader, p *chaincfg.Params) uint32 {
+	work := new(big.Int).Sub(end.totalWork, start.totalWork)
+
+	// In order to avoid difficulty cliffs, we bound the amplitude of the
+	// adjustement we are going to do.
+	duration := end.header.Timestamp.Unix() - start.header.Timestamp.Unix()
+	if (duration > 288 * int64(targetSpacing)) {
+		duration = 288 * int64(targetSpacing)
+	} else if (duration < 72 * int64(targetSpacing)) {
+		duration = 72 * int64(targetSpacing)
 	}
 
-	// calculation of new 32-byte difficulty target
-	// first turn the previous target into a big int
-	prevTarget := blockchain.CompactToBig(end.Bits)
-	// new target is old * duration...
-	newTarget := new(big.Int).Mul(prevTarget, big.NewInt(duration))
-	// divided by 2 weeks
-	newTarget.Div(newTarget, big.NewInt(int64(targetTimespan)))
+	prjectedWork := new(big.Int).Mul(work, big.NewInt(int64(targetSpacing)))
+
+	pw := new(big.Int).Div(prjectedWork, big.NewInt(duration))
+
+	e := new(big.Int).Exp(big.NewInt(2), big.NewInt(256), nil)
+
+	nt := new(big.Int).Sub(e, pw)
+
+	newTarget := new(big.Int).Div(nt, pw)
 
 	// clip again if above minimum target (too easy)
 	if newTarget.Cmp(p.PowLimit) > 0 {
 		newTarget.Set(p.PowLimit)
 	}
-
 	return blockchain.BigToCompact(newTarget)
 }

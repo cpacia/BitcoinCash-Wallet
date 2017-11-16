@@ -1,6 +1,7 @@
 package bitcoincash
 
 import (
+	"github.com/OpenBazaar/wallet-interface"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/mitchellh/go-homedir"
 	"github.com/op/go-logging"
@@ -11,7 +12,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"time"
-	"github.com/OpenBazaar/wallet-interface"
 	"github.com/OpenBazaar/openbazaar-go/bitcoin"
 )
 
@@ -68,14 +68,14 @@ func NewDefaultConfig() *Config {
 	if os.IsNotExist(ferr) {
 		os.Mkdir(repoPath, os.ModePerm)
 	}
-	feeApi, _ := url.Parse("")
+	feeApi, _ := url.Parse("https://bitcoinfees.21.co/api/v1/fees/recommended")
 	return &Config{
 		Params:    &chaincfg.MainNetParams,
 		UserAgent: "spvwallet",
 		RepoPath:  repoPath,
-		LowFee:    20,
-		MediumFee: 50,
-		HighFee:   100,
+		LowFee:    140,
+		MediumFee: 160,
+		HighFee:   180,
 		MaxFee:    2000,
 		FeeAPI:    *feeApi,
 		Logger:    logging.NewLogBackend(os.Stdout, "", 0),
@@ -85,7 +85,7 @@ func NewDefaultConfig() *Config {
 func getRepoPath() (string, error) {
 	// Set default base path and directory name
 	path := "~"
-	directoryName := "BitcoinCash"
+	directoryName := "bitcoincash"
 
 	// Override OS-specific names
 	switch runtime.GOOS {

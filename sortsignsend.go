@@ -1,3 +1,6 @@
+// Copyright (C) 2015-2016 The Lightning Network Developers
+// Copyright (c) 2016-2017 The OpenBazaar Developers
+
 package bitcoincash
 
 import (
@@ -5,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/OpenBazaar/wallet-interface"
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -18,7 +22,6 @@ import (
 	"github.com/btcsuite/btcwallet/wallet/txrules"
 	"time"
 	"github.com/cpacia/bchutil"
-	"github.com/OpenBazaar/wallet-interface"
 )
 
 func (s *SPVWallet) Broadcast(tx *wire.MsgTx) error {
@@ -29,7 +32,7 @@ func (s *SPVWallet) Broadcast(tx *wire.MsgTx) error {
 		return err
 	}
 
-	// Make an inv message instead of a tx message to be polite
+	// make an inv message instead of a tx message to be polite
 	txid := tx.TxHash()
 	iv1 := wire.NewInvVect(wire.InvTypeTx, &txid)
 	invMsg := wire.NewMsgInv()
@@ -211,6 +214,40 @@ func (w *SPVWallet) EstimateFee(ins []wallet.TransactionInput, outs []wallet.Tra
 	estimatedSize := EstimateSerializeSize(len(ins), tx.TxOut, false, P2PKH)
 	fee := estimatedSize * int(feePerByte)
 	return uint64(fee)
+}
+
+// Build a spend transaction for the amount and return the transaction fee
+func (w *SPVWallet) EstimateSpendFee(amount int64, feeLevel wallet.FeeLevel) (uint64, error) {
+	// Since this is an estimate we can use a dummy output address. Let's use a long one so we don't under estimate.
+	addr, err := btc.DecodeAddress("114K8nZhYcG1rsxcc1YGujFwWj5NLByc5v", w.params)
+	if err != nil {
+		return 0, err
+	}
+	tx, err := w.buildTx(amount, addr, feeLevel, nil)
+	if err != nil {
+		return 0, err
+	}
+	var outval int64
+	for _, output := range tx.TxOut {
+		outval += output.Value
+	}
+	var inval int64
+	utxos, err := w.txstore.Utxos().GetAll()
+	if err != nil {
+		return 0, err
+	}
+	for _, input := range tx.TxIn {
+		for _, utxo := range utxos {
+			if utxo.Op.Hash.IsEqual(&input.PreviousOutPoint.Hash) && utxo.Op.Index == input.PreviousOutPoint.Index {
+				inval += utxo.Value
+				break
+			}
+		}
+	}
+	if inval < outval {
+		return 0, errors.New("Error building transaction: inputs less than outputs")
+	}
+	return uint64(inval - outval), err
 }
 
 func (w *SPVWallet) GenerateMultisigScript(keys []hd.ExtendedKey, threshold int, timeout time.Duration, timeoutKey *hd.ExtendedKey) (addr btc.Address, redeemScript []byte, err error) {
@@ -404,7 +441,6 @@ func (w *SPVWallet) Multisign(ins []wallet.TransactionInput, outs []wallet.Trans
 	return buf.Bytes(), nil
 }
 
-// TODO: once segwit activates this will need to build segwit transactions if the utxo script is a witness program
 func (w *SPVWallet) SweepAddress(utxos []wallet.Utxo, address *btc.Address, key *hd.ExtendedKey, redeemScript *[]byte, feeLevel wallet.FeeLevel) (*chainhash.Hash, error) {
 	var internalAddr btc.Address
 	if address != nil {
@@ -534,67 +570,6 @@ func (w *SPVWallet) SweepAddress(utxos []wallet.Utxo, address *btc.Address, key 
 	return &txid, nil
 }
 
-func NewUnsignedTransaction(outputs []*wire.TxOut, feePerKb btc.Amount, fetchInputs txauthor.InputSource, fetchChange txauthor.ChangeSource) (*txauthor.AuthoredTx, error) {
-
-	var targetAmount btc.Amount
-	for _, txOut := range outputs {
-		targetAmount += btc.Amount(txOut.Value)
-	}
-
-	estimatedSize := EstimateSerializeSize(1, outputs, true, P2PKH)
-	targetFee := txrules.FeeForSerializeSize(feePerKb, estimatedSize)
-
-	for {
-		inputAmount, inputs, scripts, err := fetchInputs(targetAmount + targetFee)
-		if err != nil {
-			return nil, err
-		}
-		if inputAmount < targetAmount+targetFee {
-			return nil, errors.New("insufficient funds available to construct transaction")
-		}
-
-		maxSignedSize := EstimateSerializeSize(len(inputs), outputs, true, P2PKH)
-		maxRequiredFee := txrules.FeeForSerializeSize(feePerKb, maxSignedSize)
-		remainingAmount := inputAmount - targetAmount
-		if remainingAmount < maxRequiredFee {
-			targetFee = maxRequiredFee
-			continue
-		}
-
-		unsignedTransaction := &wire.MsgTx{
-			Version:  wire.TxVersion,
-			TxIn:     inputs,
-			TxOut:    outputs,
-			LockTime: 0,
-		}
-		changeIndex := -1
-		changeAmount := inputAmount - targetAmount - maxRequiredFee
-		if changeAmount != 0 && !txrules.IsDustAmount(changeAmount,
-			P2PKHOutputSize, txrules.DefaultRelayFeePerKb) {
-			changeScript, err := fetchChange()
-			if err != nil {
-				return nil, err
-			}
-			if len(changeScript) > P2PKHPkScriptSize {
-				return nil, errors.New("fee estimation requires change " +
-					"scripts no larger than P2PKH output scripts")
-			}
-			change := wire.NewTxOut(int64(changeAmount), changeScript)
-			l := len(outputs)
-			unsignedTransaction.TxOut = append(outputs[:l:l], change)
-			changeIndex = l
-		}
-
-		return &txauthor.AuthoredTx{
-			Tx:          unsignedTransaction,
-			PrevScripts: scripts,
-			TotalInput:  inputAmount,
-			ChangeIndex: changeIndex,
-		}, nil
-	}
-}
-
-// TODO: once segwit activates this will need to build segwit transactions if the utxo script is a witness program
 func (w *SPVWallet) buildTx(amount int64, addr btc.Address, feeLevel wallet.FeeLevel, optionalOutput *wire.TxOut) (*wire.MsgTx, error) {
 	// Check for dust
 	script, _ := txscript.PayToAddrScript(addr)
@@ -679,7 +654,7 @@ func (w *SPVWallet) buildTx(amount int64, addr btc.Address, feeLevel wallet.FeeL
 		return wif.PrivKey, wif.CompressPubKey, nil
 	})
 	getScript := txscript.ScriptClosure(func(
-		addr btc.Address) ([]byte, error) {
+	addr btc.Address) ([]byte, error) {
 		return []byte{}, nil
 	})
 	for i, txIn := range authoredTx.Tx.TxIn {
@@ -693,6 +668,66 @@ func (w *SPVWallet) buildTx(amount int64, addr btc.Address, feeLevel wallet.FeeL
 		txIn.SignatureScript = script
 	}
 	return authoredTx.Tx, nil
+}
+
+func NewUnsignedTransaction(outputs []*wire.TxOut, feePerKb btc.Amount, fetchInputs txauthor.InputSource, fetchChange txauthor.ChangeSource) (*txauthor.AuthoredTx, error) {
+
+	var targetAmount btc.Amount
+	for _, txOut := range outputs {
+		targetAmount += btc.Amount(txOut.Value)
+	}
+
+	estimatedSize := EstimateSerializeSize(1, outputs, true, P2PKH)
+	targetFee := txrules.FeeForSerializeSize(feePerKb, estimatedSize)
+
+	for {
+		inputAmount, inputs, scripts, err := fetchInputs(targetAmount + targetFee)
+		if err != nil {
+			return nil, err
+		}
+		if inputAmount < targetAmount+targetFee {
+			return nil, errors.New("insufficient funds available to construct transaction")
+		}
+
+		maxSignedSize := EstimateSerializeSize(len(inputs), outputs, true, P2PKH)
+		maxRequiredFee := txrules.FeeForSerializeSize(feePerKb, maxSignedSize)
+		remainingAmount := inputAmount - targetAmount
+		if remainingAmount < maxRequiredFee {
+			targetFee = maxRequiredFee
+			continue
+		}
+
+		unsignedTransaction := &wire.MsgTx{
+			Version:  wire.TxVersion,
+			TxIn:     inputs,
+			TxOut:    outputs,
+			LockTime: 0,
+		}
+		changeIndex := -1
+		changeAmount := inputAmount - targetAmount - maxRequiredFee
+		if changeAmount != 0 && !txrules.IsDustAmount(changeAmount,
+			P2PKHOutputSize, txrules.DefaultRelayFeePerKb) {
+			changeScript, err := fetchChange()
+			if err != nil {
+				return nil, err
+			}
+			if len(changeScript) > P2PKHPkScriptSize {
+				return nil, errors.New("fee estimation requires change " +
+					"scripts no larger than P2PKH output scripts")
+			}
+			change := wire.NewTxOut(int64(changeAmount), changeScript)
+			l := len(outputs)
+			unsignedTransaction.TxOut = append(outputs[:l:l], change)
+			changeIndex = l
+		}
+
+		return &txauthor.AuthoredTx{
+			Tx:          unsignedTransaction,
+			PrevScripts: scripts,
+			TotalInput:  inputAmount,
+			ChangeIndex: changeIndex,
+		}, nil
+	}
 }
 
 func (w *SPVWallet) GetFeePerByte(feeLevel wallet.FeeLevel) uint64 {
