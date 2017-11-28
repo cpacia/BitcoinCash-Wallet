@@ -447,11 +447,11 @@ func TestBlockchain_SetChainState(t *testing.T) {
 func TestBlockchain_calcDiffAdjust(t *testing.T) {
 
 	// Test calculation of next difficulty target with no constraints applying
-	start := wire.BlockHeader{}
-	end := wire.BlockHeader{}
-	start.Timestamp = time.Unix(1261130161, 0) // Block #30240
-	end.Timestamp = time.Unix(1262152739, 0)   // Block #32255
-	end.Bits = 0x1d00ffff
+	start := StoredHeader{wire.BlockHeader{}}
+	end := StoredHeader{wire.BlockHeader{}}
+	start.header.Timestamp = time.Unix(1261130161, 0) // Block #30240
+	end.header.Timestamp = time.Unix(1262152739, 0)   // Block #32255
+	end.header.Bits = 0x1d00ffff
 	if calcDiffAdjust(start, end, &chaincfg.RegressionNetParams) != 0x1d00d86a {
 		t.Error("callDiffAdjust returned incorrect difficulty")
 	}

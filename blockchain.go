@@ -138,9 +138,9 @@ func (b *Blockchain) CheckHeader(header wire.BlockHeader, prevHeader StoredHeade
 
 	// Due to the rolling difficulty period our checkpoint block consists of a block and a hash of a block 146 blocks later
 	// During this period we can skip the validity checks as long as block checkpoint + 146 matches the hardcoded hash.
-	if height + 1 <= b.checkpoint.Height + 146 {
+	if height + 1 <= b.checkpoint.Height + 147 {
 		h := header.BlockHash()
-		if b.checkpoint.Check2 != nil && height + 1 == b.checkpoint.Height + 146 && !b.checkpoint.Check2.IsEqual(&h){
+		if b.checkpoint.Check2 != nil && height + 1 == b.checkpoint.Height + 147 && !b.checkpoint.Check2.IsEqual(&h){
 			return false
 		}
 		return true
@@ -191,12 +191,12 @@ func (b *Blockchain) calcRequiredWork(header wire.BlockHeader, height int32, pre
 		return b.params.PowLimitBits, nil
 	}
 
-	suitableHeader, err := b.GetSuitableBlock(header)
+	suitableHeader, err := b.GetSuitableBlock(prevHeader)
 	if err != nil {
 		log.Error(err)
 		return 0, err
 	}
-	epoch, err := b.GetEpoch(header)
+	epoch, err := b.GetEpoch(prevHeader.header)
 	if err != nil {
 		log.Error(err)
 		return 0, err
@@ -226,9 +226,9 @@ func (b *Blockchain) CalcMedianTimePast(header wire.BlockHeader) (time.Time, err
 
 // Rollsback and grabs block n-144, n-145, and n-146, sorts them by timestamps and returns the middle header.
 func (b *Blockchain) GetEpoch(hdr wire.BlockHeader) (StoredHeader, error) {
-	sh := StoredHeader{header: hdr}
+	sh := StoredHeader{header:hdr}
 	var err error
-	for i := 0; i < 145; i++ {
+	for i := 0; i < 144; i++ {
 		sh, err = b.db.GetPreviousHeader(sh.header)
 		if err != nil {
 			return sh, err
@@ -251,23 +251,19 @@ func (b *Blockchain) GetEpoch(hdr wire.BlockHeader) (StoredHeader, error) {
 }
 
 // Rollsback grabs the last two headers before this one. Sorts the three and returns the mid.
-func (b *Blockchain) GetSuitableBlock(hdr wire.BlockHeader) (StoredHeader, error) {
-	sh, err := b.db.GetPreviousHeader(hdr)
+func (b *Blockchain) GetSuitableBlock(hdr StoredHeader) (StoredHeader, error) {
+	n := hdr
+	sh, err := b.db.GetPreviousHeader(hdr.header)
 	if err != nil {
 		return sh, err
 	}
-	one := sh
-	sh, err = b.db.GetPreviousHeader(one.header)
+	n1 := sh
+	sh, err = b.db.GetPreviousHeader(n1.header)
 	if err != nil {
 		return sh, err
 	}
-	two := sh
-	sh, err = b.db.GetPreviousHeader(two.header)
-	if err != nil {
-		return sh, err
-	}
-	three := sh
-	headers := []StoredHeader{one, two, three}
+	n2 := sh
+	headers := []StoredHeader{n, n1, n2}
 	sort.Sort(blockSorter(headers))
 	return headers[1], nil
 }

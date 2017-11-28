@@ -21,7 +21,7 @@ func init() {
 	// Mainnet
 	mainnetPrev, _ := chainhash.NewHashFromStr("0000000000000000011ebf65b60d0a3de80b8175be709d653b4c1a1beeb6ab9c")
 	mainnetMerk, _ := chainhash.NewHashFromStr("8ebf2179d8b1ba0aaf5f15357f963b56f53a8c6207e0156b4b6def119be61bee")
-	check2, _ := chainhash.NewHashFromStr("0000000000000000012caacbf01c055790e5a61dda3f4e807552180aa50d8d54")
+	check2, _ := chainhash.NewHashFromStr("000000000000000001250f09f253d22d6ef14e924eccb7c1bbaa0695269cef59")
 	mainnetCheckpoints = append(mainnetCheckpoints, Checkpoint{
 		Height: 504032,
 		Header: wire.BlockHeader{
@@ -41,7 +41,7 @@ func init() {
 	// Testnet3
 	testnet3Prev, _ := chainhash.NewHashFromStr("00000000824633a21bc41dccbd7a6d159a4deebaece6f6dcf2093301aea040a5")
 	testnet3Merk, _ := chainhash.NewHashFromStr("d69264d97d77da1b9bf0ae031512a89e0607e8200be29a74163a39b8558f5714")
-	testnetCheck2, _ := chainhash.NewHashFromStr("0000000000005c8804d5e36a166646a9ca1d49250423a851b13d1bbf835e47fe")
+	testnetCheck2, _ := chainhash.NewHashFromStr("00000000000044040acf28b1bab8706f09f7862275b65a03580b6db136ad2dbd")
 	testnet3Checkpoints = append(testnet3Checkpoints, Checkpoint{
 		Height: 1189213,
 		Header: wire.BlockHeader{
