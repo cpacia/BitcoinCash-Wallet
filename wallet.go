@@ -208,7 +208,7 @@ func (w *SPVWallet) ConnectedPeers() []*peer.Peer {
 func (w *SPVWallet) CurrentAddress(purpose wallet.KeyPurpose) btc.Address {
 	key, _ := w.keyManager.GetCurrentKey(purpose)
 	addr, _ := key.Address(w.params)
-	cashaddr, _ := bchutil.NewBitpayAddressPubKeyHash(addr.ScriptAddress(), w.params)
+	cashaddr, _ := bchutil.NewCashAddressPubKeyHash(addr.ScriptAddress(), w.params)
 	return btc.Address(cashaddr)
 }
 
@@ -218,7 +218,7 @@ func (w *SPVWallet) NewAddress(purpose wallet.KeyPurpose) btc.Address {
 	addr, _ := key.Address(w.params)
 	w.txstore.Keys().MarkKeyAsUsed(addr.ScriptAddress())
 	w.txstore.PopulateAdrs()
-	cashaddr, _ := bchutil.NewBitpayAddressPubKeyHash(addr.ScriptAddress(), w.params)
+	cashaddr, _ := bchutil.NewCashAddressPubKeyHash(addr.ScriptAddress(), w.params)
 	return btc.Address(cashaddr)
 }
 
