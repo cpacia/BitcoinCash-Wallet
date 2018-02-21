@@ -71,7 +71,10 @@ func main() {
 	}()
 	if len(os.Args) == 1 {
 		start.Gui = true
-		start.Execute([]string{"useDefaults"})
+		err := start.Execute([]string{"useDefaults"})
+		if err != nil {
+			astilog.Fatal(err)
+		}
 	} else {
 		parser.AddCommand("start",
 			"start the wallet",
@@ -322,7 +325,10 @@ func (x *Start) Execute(args []string) error {
 		tc := make(chan struct{})
 		rc := make(chan int)
 
-		os.RemoveAll(path.Join(basepath, "resources"))
+		err = os.RemoveAll(path.Join(basepath, "resources"))
+		if err != nil {
+			return err
+		}
 		iconPath := path.Join(basepath, "icon.png")
 		_, err := os.Stat(iconPath)
 		if os.IsNotExist(err) {
