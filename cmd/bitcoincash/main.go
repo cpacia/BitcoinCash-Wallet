@@ -380,10 +380,10 @@ func (x *Start) Execute(args []string) error {
 						Height:       height,
 						ExchangeRate: fmt.Sprintf("%.2f", rate),
 					}
-					w.Send(bootstrap.MessageOut{Name: "statsUpdate", Payload: st})
+					w.SendMessage(bootstrap.MessageOut{Name: "statsUpdate", Payload: st})
 				case "getAddress":
 					addr := cashWallet.CurrentAddress(wallet.EXTERNAL)
-					w.Send(bootstrap.MessageOut{Name: "address", Payload: addr.EncodeAddress()})
+					w.SendMessage(bootstrap.MessageOut{Name: "address", Payload: addr.EncodeAddress()})
 				case "send":
 					type P struct {
 						Address  string  `json:"address"`
@@ -409,12 +409,12 @@ func (x *Start) Execute(args []string) error {
 					}
 					addr, err := btcutil.DecodeAddress(p.Address, cashWallet.Params())
 					if err != nil {
-						w.Send(bootstrap.MessageOut{Name: "spendError", Payload: "Invalid address"})
+						w.SendMessage(bootstrap.MessageOut{Name: "spendError", Payload: "Invalid address"})
 						return
 					}
 					_, err = cashWallet.Spend(int64(p.Amount), addr, feeLevel)
 					if err != nil {
-						w.Send(bootstrap.MessageOut{Name: "spendError", Payload: err.Error()})
+						w.SendMessage(bootstrap.MessageOut{Name: "spendError", Payload: err.Error()})
 					}
 				case "clipboard":
 					type P struct {
@@ -472,7 +472,7 @@ func (x *Start) Execute(args []string) error {
 					if err != nil {
 						astilog.Error(err.Error())
 					}
-					w.Send(bootstrap.MessageOut{Name: "settings", Payload: string(ret)})
+					w.SendMessage(bootstrap.MessageOut{Name: "settings", Payload: string(ret)})
 				case "openbrowser":
 					var url string
 					if err := json.Unmarshal(m.Payload, &url); err != nil {
@@ -498,14 +498,14 @@ func (x *Start) Execute(args []string) error {
 					if err != nil {
 						wif, err := btcutil.DecodeWIF(p.Key)
 						if err != nil {
-							w.Send(bootstrap.MessageOut{Name: "importError", Payload: err.Error()})
+							w.SendMessage(bootstrap.MessageOut{Name: "importError", Payload: err.Error()})
 							return
 						}
 						privKey = wif.PrivKey
 						compress = wif.CompressPubKey
 					} else {
 						if len(keyBytes) != 32 {
-							w.Send(bootstrap.MessageOut{Name: "importError", Payload: "Invalid key"})
+							w.SendMessage(bootstrap.MessageOut{Name: "importError", Payload: "Invalid key"})
 							return
 						}
 						privKey, _ = btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
@@ -557,15 +557,15 @@ func (x *Start) Execute(args []string) error {
 					}()
 					txs, err := cashWallet.Transactions()
 					if err != nil {
-						w.Send(bootstrap.MessageOut{Name: "txError", Payload: err.Error()})
+						w.SendMessage(bootstrap.MessageOut{Name: "txError", Payload: err.Error()})
 					}
-					w.Send(bootstrap.MessageOut{Name: "transactions", Payload: txs})
+					w.SendMessage(bootstrap.MessageOut{Name: "transactions", Payload: txs})
 				case "getTransactions":
 					txs, err := cashWallet.Transactions()
 					if err != nil {
-						w.Send(bootstrap.MessageOut{Name: "txError", Payload: err.Error()})
+						w.SendMessage(bootstrap.MessageOut{Name: "txError", Payload: err.Error()})
 					}
-					w.Send(bootstrap.MessageOut{Name: "transactions", Payload: txs})
+					w.SendMessage(bootstrap.MessageOut{Name: "transactions", Payload: txs})
 				case "hide":
 					go func() {
 						rc <- 341
@@ -575,7 +575,7 @@ func (x *Start) Execute(args []string) error {
 						rc <- 649
 					}()
 				case "getMnemonic":
-					w.Send(bootstrap.MessageOut{Name: "mnemonic", Payload: cashWallet.Mnemonic()})
+					w.SendMessage(bootstrap.MessageOut{Name: "mnemonic", Payload: cashWallet.Mnemonic()})
 				}
 			},
 			RestoreAssets: gui.RestoreAssets,

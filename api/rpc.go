@@ -19,6 +19,7 @@ import (
 	"net"
 	"sync"
 	"github.com/OpenBazaar/wallet-interface"
+	"github.com/cpacia/bchutil"
 )
 
 const Addr = "127.0.0.1:8234"
@@ -207,7 +208,7 @@ func (s *server) Spend(ctx context.Context, in *pb.SpendInfo) (*pb.Txid, error) 
 	default:
 		return nil, errors.New("Unknown fee level")
 	}
-	addr, err := btcutil.DecodeAddress(in.Address, &p)
+	addr, err := bchutil.DecodeAddress(in.Address, &p)
 	if err != nil {
 		return nil, err
 	}
