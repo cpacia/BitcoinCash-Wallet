@@ -16,6 +16,7 @@ import (
 	"io"
 	"sync"
 	"time"
+	"github.com/OpenBazaar/openbazaar-go/bitcoin"
 )
 
 func setupNetworkParams(params *chaincfg.Params) {
@@ -410,6 +411,10 @@ func (w *SPVWallet) AddWatchedScript(script []byte) error {
 
 func (w *SPVWallet) DumpHeaders(writer io.Writer) {
 	w.blockchain.db.Print(writer)
+}
+
+func (w *SPVWallet) ExchangeRates() bitcoin.ExchangeRates {
+	return w.feeProvider.exchangeRates
 }
 
 func (w *SPVWallet) Close() {
