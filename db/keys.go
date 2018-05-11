@@ -5,11 +5,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/OpenBazaar/wallet-interface"
 	"github.com/btcsuite/btcd/btcec"
 	"math/rand"
 	"strconv"
 	"sync"
-	"github.com/OpenBazaar/wallet-interface"
 )
 
 type KeysDB struct {

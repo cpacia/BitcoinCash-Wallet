@@ -14,8 +14,8 @@ import (
 	"github.com/btcsuite/btcd/peer"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil/bloom"
-	"golang.org/x/net/proxy"
 	"github.com/cpacia/bchutil"
+	"golang.org/x/net/proxy"
 )
 
 var (

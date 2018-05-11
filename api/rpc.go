@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/hex"
 	"errors"
+	"github.com/OpenBazaar/wallet-interface"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -12,14 +13,13 @@ import (
 	"github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/cpacia/BitcoinCash-Wallet"
 	"github.com/cpacia/BitcoinCash-Wallet/api/pb"
+	"github.com/cpacia/bchutil"
 	"github.com/golang/protobuf/ptypes"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"net"
 	"sync"
-	"github.com/OpenBazaar/wallet-interface"
-	"github.com/cpacia/bchutil"
 )
 
 const Addr = "127.0.0.1:8234"

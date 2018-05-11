@@ -20,8 +20,8 @@ import (
 	"github.com/btcsuite/btcutil/txsort"
 	"github.com/btcsuite/btcwallet/wallet/txauthor"
 	"github.com/btcsuite/btcwallet/wallet/txrules"
-	"time"
 	"github.com/cpacia/bchutil"
+	"time"
 )
 
 func (s *SPVWallet) Broadcast(tx *wire.MsgTx) error {

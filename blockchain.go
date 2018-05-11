@@ -19,8 +19,8 @@ import (
 // chaincfg.Params so they'll go here.  If you're into the [ANN]altcoin scene,
 // you may want to paramaterize these constants.
 const (
-	targetSpacing       = 600
-	medianTimeBlocks    = 11
+	targetSpacing    = 600
+	medianTimeBlocks = 11
 )
 
 type ChainState int
@@ -138,14 +138,13 @@ func (b *Blockchain) CheckHeader(header wire.BlockHeader, prevHeader StoredHeade
 
 	// Due to the rolling difficulty period our checkpoint block consists of a block and a hash of a block 146 blocks later
 	// During this period we can skip the validity checks as long as block checkpoint + 146 matches the hardcoded hash.
-	if height + 1 <= b.checkpoint.Height + 147 {
+	if height+1 <= b.checkpoint.Height+147 {
 		h := header.BlockHash()
-		if b.checkpoint.Check2 != nil && height + 1 == b.checkpoint.Height + 147 && !b.checkpoint.Check2.IsEqual(&h){
+		if b.checkpoint.Check2 != nil && height+1 == b.checkpoint.Height+147 && !b.checkpoint.Check2.IsEqual(&h) {
 			return false
 		}
 		return true
 	}
-
 
 	// Get hash of n-1 header
 	prevHash := prevHeader.header.BlockHash()
@@ -158,18 +157,18 @@ func (b *Blockchain) CheckHeader(header wire.BlockHeader, prevHeader StoredHeade
 
 	// Check the header meets the difficulty requirement
 	if b.params.Name != chaincfg.RegressionNetParams.Name { // Don't need to check difficulty on regtest
-		diffTarget, err := b.calcRequiredWork(header, int32(height + 1), prevHeader)
+		diffTarget, err := b.calcRequiredWork(header, int32(height+1), prevHeader)
 		if err != nil {
 			log.Errorf("Error calclating difficulty", err)
 			return false
 		}
 		if header.Bits != diffTarget && b.params.Name == chaincfg.MainNetParams.Name {
 			log.Warningf("Block %d %s incorrect difficulty.  Read %d, expect %d\n",
-				height + 1, header.BlockHash().String(), header.Bits, diffTarget)
+				height+1, header.BlockHash().String(), header.Bits, diffTarget)
 			return false
 		} else if diffTarget == b.params.PowLimitBits && header.Bits > diffTarget && b.params.Name == chaincfg.TestNet3Params.Name {
 			log.Warningf("Block %d %s incorrect difficulty.  Read %d, expect %d\n",
-				height + 1, header.BlockHash().String(), header.Bits, diffTarget)
+				height+1, header.BlockHash().String(), header.Bits, diffTarget)
 			return false
 		}
 	}
@@ -187,7 +186,7 @@ func (b *Blockchain) CheckHeader(header wire.BlockHeader, prevHeader StoredHeade
 // or testnet difficulty rules.
 func (b *Blockchain) calcRequiredWork(header wire.BlockHeader, height int32, prevHeader StoredHeader) (uint32, error) {
 	// Special difficulty rule for testnet
-	if b.params.ReduceMinDifficulty && header.Timestamp.After(prevHeader.header.Timestamp.Add(targetSpacing * 2)) {
+	if b.params.ReduceMinDifficulty && header.Timestamp.After(prevHeader.header.Timestamp.Add(targetSpacing*2)) {
 		return b.params.PowLimitBits, nil
 	}
 
@@ -226,7 +225,7 @@ func (b *Blockchain) CalcMedianTimePast(header wire.BlockHeader) (time.Time, err
 
 // Rollsback and grabs block n-144, n-145, and n-146, sorts them by timestamps and returns the middle header.
 func (b *Blockchain) GetEpoch(hdr wire.BlockHeader) (StoredHeader, error) {
-	sh := StoredHeader{header:hdr}
+	sh := StoredHeader{header: hdr}
 	var err error
 	for i := 0; i < 144; i++ {
 		sh, err = b.db.GetPreviousHeader(sh.header)
@@ -462,9 +461,9 @@ func calcDiffAdjust(start, end StoredHeader, p *chaincfg.Params) uint32 {
 	// In order to avoid difficulty cliffs, we bound the amplitude of the
 	// adjustement we are going to do.
 	duration := end.header.Timestamp.Unix() - start.header.Timestamp.Unix()
-	if (duration > 288 * int64(targetSpacing)) {
+	if duration > 288*int64(targetSpacing) {
 		duration = 288 * int64(targetSpacing)
-	} else if (duration < 72 * int64(targetSpacing)) {
+	} else if duration < 72*int64(targetSpacing) {
 		duration = 72 * int64(targetSpacing)
 	}
 

@@ -2,8 +2,8 @@ package bitcoincash
 
 import (
 	"bytes"
-	"testing"
 	"github.com/OpenBazaar/wallet-interface"
+	"testing"
 )
 
 type ClosingBuffer struct {

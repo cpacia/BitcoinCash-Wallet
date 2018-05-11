@@ -1,11 +1,11 @@
 package bitcoincash
 
 import (
+	"bytes"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/peer"
 	"github.com/btcsuite/btcd/wire"
 	"time"
-	"bytes"
 )
 
 var (

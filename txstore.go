@@ -31,17 +31,20 @@ type TxStore struct {
 
 	listeners []func(wallet.TransactionCallback)
 
+	additionalFilters [][]byte
+
 	wallet.Datastore
 }
 
-func NewTxStore(p *chaincfg.Params, db wallet.Datastore, keyManager *KeyManager) (*TxStore, error) {
+func NewTxStore(p *chaincfg.Params, db wallet.Datastore, keyManager *KeyManager, additionalFilters ...[]byte) (*TxStore, error) {
 	txs := &TxStore{
-		params:     p,
-		keyManager: keyManager,
-		addrMutex:  new(sync.Mutex),
-		cbMutex:    new(sync.Mutex),
-		txids:      make(map[string]int32),
-		Datastore:  db,
+		params:            p,
+		keyManager:        keyManager,
+		addrMutex:         new(sync.Mutex),
+		cbMutex:           new(sync.Mutex),
+		txids:             make(map[string]int32),
+		Datastore:         db,
+		additionalFilters: additionalFilters,
 	}
 	err := txs.PopulateAdrs()
 	if err != nil {
@@ -88,7 +91,9 @@ func (ts *TxStore) GimmeFilter() (*bloom.Filter, error) {
 		}
 		f.Add(addrs[0].ScriptAddress())
 	}
-
+	for _, toAdd := range ts.additionalFilters {
+		f.Add(toAdd)
+	}
 	return f, nil
 }
 

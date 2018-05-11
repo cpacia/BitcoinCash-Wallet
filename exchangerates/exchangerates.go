@@ -8,10 +8,10 @@ import (
 	"golang.org/x/net/proxy"
 	"net"
 	"net/http"
+	"reflect"
 	"strconv"
 	"sync"
 	"time"
-	"reflect"
 )
 
 type ExchangeRateProvider struct {
@@ -162,7 +162,7 @@ func (b OpenBazaarDecoder) decode(dat interface{}, cache map[string]float64, bp 
 			if !ok {
 				return errors.New(reflect.TypeOf(b).Name() + ".decode: Type assertion failed, missing 'last' (float) field")
 			}
-			cache[k] = price*(1/bchRate)
+			cache[k] = price * (1 / bchRate)
 		}
 	}
 	return nil

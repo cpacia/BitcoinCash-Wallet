@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/cpacia/BitcoinCash-Wallet"
 	"github.com/cpacia/BitcoinCash-Wallet/db"
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/op/go-logging"
 )
 
