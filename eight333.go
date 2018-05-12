@@ -89,7 +89,7 @@ func (w *SPVWallet) onMerkleBlock(p *peer.Peer, m *wire.MsgMerkleBlock) {
 	}
 
 	for _, txid := range txids {
-		w.peerManager.QueueTxForDownload(p, *txid, int32(height))
+		w.peerManager.QueueTxForDownload(p, *txid, int32(height), m.Header.Timestamp)
 	}
 
 	log.Debugf("Received Merkle Block %s at height %d\n", m.Header.BlockHash().String(), height)
@@ -123,7 +123,7 @@ func (w *SPVWallet) onMerkleBlock(p *peer.Peer, m *wire.MsgMerkleBlock) {
 
 func (w *SPVWallet) onTx(p *peer.Peer, m *wire.MsgTx) {
 	w.mutex.Lock()
-	height, err := w.peerManager.DequeueTx(p, m.TxHash())
+	height, ts, err := w.peerManager.DequeueTx(p, m.TxHash())
 	if err != nil {
 		if w.blockchain.ChainState() == SYNCING {
 			log.Warningf("Received unqued tx id: %s\n", m.TxHash().String())
@@ -132,7 +132,7 @@ func (w *SPVWallet) onTx(p *peer.Peer, m *wire.MsgTx) {
 		return
 	}
 	w.mutex.Unlock()
-	hits, err := w.txstore.Ingest(m, height)
+	hits, err := w.txstore.Ingest(m, height, ts)
 	if err != nil {
 		log.Errorf("Error ingesting tx: %s\n", err.Error())
 		return
@@ -167,7 +167,7 @@ func (w *SPVWallet) onInv(p *peer.Peer, m *wire.MsgInv) {
 					w.peerManager.BlockQueue() <- inv.Hash
 				}
 			case wire.InvTypeTx:
-				w.peerManager.QueueTxForDownload(p, inv.Hash, 0)
+				w.peerManager.QueueTxForDownload(p, inv.Hash, 0, time.Now())
 				gData := wire.NewMsgGetData()
 				gData.AddInvVect(inv)
 				p.QueueMessage(gData, nil)

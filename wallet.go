@@ -2,6 +2,7 @@ package bitcoincash
 
 import (
 	"errors"
+	"github.com/OpenBazaar/openbazaar-go/bitcoin"
 	"github.com/OpenBazaar/wallet-interface"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -16,7 +17,6 @@ import (
 	"io"
 	"sync"
 	"time"
-	"github.com/OpenBazaar/openbazaar-go/bitcoin"
 )
 
 func setupNetworkParams(params *chaincfg.Params) {

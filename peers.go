@@ -84,7 +84,7 @@ type PeerManager struct {
 
 	trustedPeer    net.Addr
 	downloadPeer   *peer.Peer
-	downloadQueues map[int32]map[chainhash.Hash]int32
+	downloadQueues map[int32]map[chainhash.Hash]QueuedTx
 	blockQueue     chan chainhash.Hash
 
 	getFilter          func() (*bloom.Filter, error)
@@ -107,7 +107,7 @@ func NewPeerManager(config *PeerManagerConfig) (*PeerManager, error) {
 		peerMutex:          new(sync.RWMutex),
 		openPeers:          make(map[uint64]*peer.Peer),
 		readyPeers:         make(map[*peer.Peer]struct{}),
-		downloadQueues:     make(map[int32]map[chainhash.Hash]int32),
+		downloadQueues:     make(map[int32]map[chainhash.Hash]QueuedTx),
 		sourceAddr:         wire.NewNetAddressIPPort(net.ParseIP("0.0.0.0"), defaultPort, 0),
 		trustedPeer:        config.TrustedPeer,
 		getFilter:          config.GetFilter,
@@ -172,6 +172,11 @@ func NewPeerManager(config *PeerManagerConfig) (*PeerManager, error) {
 		pm.peerConfig.Proxy = "0.0.0.0"
 	}
 	return pm, nil
+}
+
+type QueuedTx struct {
+	height    int32
+	timestamp time.Time
 }
 
 func (pm *PeerManager) ReadyPeers() []*peer.Peer {
@@ -295,30 +300,30 @@ func (pm *PeerManager) setDownloadPeer(peer *peer.Peer) {
 	}
 }
 
-func (pm *PeerManager) QueueTxForDownload(peer *peer.Peer, txid chainhash.Hash, height int32) {
+func (pm *PeerManager) QueueTxForDownload(peer *peer.Peer, txid chainhash.Hash, height int32, timestamp time.Time) {
 	pm.peerMutex.Lock()
 	defer pm.peerMutex.Unlock()
 	queue, ok := pm.downloadQueues[peer.ID()]
 	if !ok {
-		queue = make(map[chainhash.Hash]int32)
+		queue = make(map[chainhash.Hash]QueuedTx)
 		pm.downloadQueues[peer.ID()] = queue
 	}
-	queue[txid] = height
+	queue[txid] = QueuedTx{height, timestamp}
 }
 
-func (pm *PeerManager) DequeueTx(peer *peer.Peer, txid chainhash.Hash) (int32, error) {
+func (pm *PeerManager) DequeueTx(peer *peer.Peer, txid chainhash.Hash) (int32, time.Time, error) {
 	pm.peerMutex.Lock()
 	defer pm.peerMutex.Unlock()
 	queue, ok := pm.downloadQueues[peer.ID()]
 	if !ok {
-		return 0, errors.New("Transaction not found")
+		return 0, time.Time{}, errors.New("Transaction not found")
 	}
-	height, ok := queue[txid]
+	qt, ok := queue[txid]
 	if !ok {
-		return 0, errors.New("Transaction not found")
+		return 0, time.Time{}, errors.New("Transaction not found")
 	}
 	delete(queue, txid)
-	return height, nil
+	return qt.height, qt.timestamp, nil
 }
 
 // Iterates over our peers and sees if any are reporting a height
