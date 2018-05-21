@@ -330,6 +330,14 @@ func (pm *PeerManager) DequeueTx(peer *peer.Peer, txid chainhash.Hash) (int32, t
 // greater than our height. If so switch them to the download peer
 // and start the chain download again.
 func (pm *PeerManager) CheckForMoreBlocks(height uint32) bool {
+	if pm.trustedPeer == nil {
+		for {
+			if len(pm.readyPeers) > int(pm.targetOutbound / 2) {
+				break
+			}
+			time.Sleep(time.Second)
+		}
+	}
 	pm.peerMutex.RLock()
 	defer pm.peerMutex.RUnlock()
 
