@@ -34,6 +34,7 @@ import (
 	"path"
 	"strings"
 	"time"
+	"sync"
 )
 
 var parser = flags.NewParser(nil, flags.Default)
@@ -52,6 +53,7 @@ type Start struct {
 	MediumDefaultFee   uint64 `short:"n" long:"normalfee" description:"the default medium fee-per-byte" default:"90"`
 	HighDefaultFee     uint64 `short:"p" long:"priorityfee" description:"the default high fee-per-byte" default:"180"`
 	Gui                bool   `long:"gui" description:"launch an experimental GUI"`
+	Verbose            bool   `short:"v" long:"verbose" description:"print to standard out"`
 }
 type Version struct{}
 
@@ -159,6 +161,7 @@ func (x *Start) Execute(args []string) error {
 
 	// Make the logging a little prettier
 	var fileLogFormat = logging.MustStringFormatter(`%{time:15:04:05.000} [%{shortfunc}] [%{level}] %{message}`)
+	var stdoutLogFormat = logging.MustStringFormatter(`%{color:reset}%{color}%{time:15:04:05.000} [%{shortfunc}] [%{level}] %{message}`)
 	w := &lumberjack.Logger{
 		Filename:   path.Join(config.RepoPath, "logs", "bitcoin.log"),
 		MaxSize:    10, // Megabytes
@@ -168,6 +171,11 @@ func (x *Start) Execute(args []string) error {
 	bitcoinFile := logging.NewLogBackend(w, "", 0)
 	bitcoinFileFormatter := logging.NewBackendFormatter(bitcoinFile, fileLogFormat)
 	config.Logger = logging.MultiLogger(logging.MultiLogger(bitcoinFileFormatter))
+	if x.Verbose {
+		stdoutLog := logging.NewLogBackend(os.Stdout, "", 0)
+		stdoutFormatter := logging.NewBackendFormatter(stdoutLog, stdoutLogFormat)
+		config.Logger = logging.MultiLogger(logging.MultiLogger(stdoutFormatter))
+	}
 
 	// Select wallet datastore
 	sqliteDatastore, _ := db.Create(config.RepoPath)
@@ -601,6 +609,9 @@ func (x *Start) Execute(args []string) error {
 		}
 	} else {
 		cashWallet.Start()
+		var wg sync.WaitGroup
+		wg.Add(1)
+		wg.Wait()
 	}
 	return nil
 }
