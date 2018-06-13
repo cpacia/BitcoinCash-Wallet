@@ -33,8 +33,8 @@ import (
 	"os/signal"
 	"path"
 	"strings"
-	"time"
 	"sync"
+	"time"
 )
 
 var parser = flags.NewParser(nil, flags.Default)
