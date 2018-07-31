@@ -779,7 +779,7 @@ func (x *AddWatchedScript) Execute(args []string) error {
 	if len(args) <= 0 {
 		return errors.New("Address or script required")
 	}
-	_, err = client.AddWatchedScript(context.Background(), &pb.Address{args[0]})
+	_, err = client.AddWatchedAddress(context.Background(), &pb.Address{args[0]})
 	return err
 }
 
