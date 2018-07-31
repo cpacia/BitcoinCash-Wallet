@@ -26,7 +26,7 @@ func (m *mockExchangeRate) GetLatestRate(currencyCode string) (float64, error) {
 	return returnRate, nil
 }
 
-func (m *mockExchangeRate) GetAllRates() (map[string]float64, error) {
+func (m *mockExchangeRate) GetAllRates(usecache bool) (map[string]float64, error) {
 	return make(map[string]float64), nil
 }
 

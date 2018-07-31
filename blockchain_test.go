@@ -2,7 +2,6 @@ package bitcoincash
 
 import (
 	"bytes"
-	"crypto/rand"
 	"encoding/hex"
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -40,21 +39,21 @@ var fork = []string{
 }
 
 func createBlockChain(bc *Blockchain) error {
+	currentTime := time.Unix(1533064176, 0)
 	best, err := bc.db.GetBestHeader()
 	if err != nil {
 		return err
 	}
 	x := best.height
 	last := best.header
+	totalWork := int64(5000)
 	for i := 0; i < 2015; i++ {
 		x++
 		hdr := wire.BlockHeader{}
 		hdr.PrevBlock = last.BlockHash()
 		hdr.Nonce = 0
-		hdr.Timestamp = time.Now().Add(time.Minute * time.Duration(i))
-		mr := make([]byte, 32)
-		rand.Read(mr)
-		ch, err := chainhash.NewHash(mr)
+		hdr.Timestamp = currentTime.Add(time.Minute * time.Duration(i))
+		ch, err := chainhash.NewHashFromStr("04def4ccd13e002ec47d096141c9dce354c7f83034e043a3acc25937b92a96b7")
 		if err != nil {
 			return err
 		}
@@ -64,10 +63,11 @@ func createBlockChain(bc *Blockchain) error {
 		sh := StoredHeader{
 			header:    hdr,
 			height:    x,
-			totalWork: big.NewInt(0),
+			totalWork: big.NewInt(totalWork),
 		}
 		bc.db.(*HeaderDB).put(sh, true)
 		last = hdr
+		totalWork += 5000
 	}
 	return nil
 }
@@ -314,7 +314,7 @@ func TestBlockchain_CheckHeader(t *testing.T) {
 	hdr1.Deserialize(&buf)
 	sh := StoredHeader{
 		header:    hdr0,
-		height:    0,
+		height:    150,
 		totalWork: big.NewInt(0),
 	}
 	if !bc.CheckHeader(hdr1, sh) {
@@ -432,62 +432,82 @@ func TestBlockchain_checkProofOfWork(t *testing.T) {
 	}
 }
 
-func TestBlockchain_SetChainState(t *testing.T) {
-	bc, err := NewBlockchain("", MockCreationTime, &chaincfg.RegressionNetParams)
-	if err != nil {
-		t.Error(err)
-	}
-	bc.SetChainState(WAITING)
-	if bc.ChainState() != WAITING {
-		t.Error("Failed to set chainstate correctly")
-	}
-	os.RemoveAll("headers.bin")
-}
-
 func TestBlockchain_calcDiffAdjust(t *testing.T) {
 
 	// Test calculation of next difficulty target with no constraints applying
-	start := StoredHeader{wire.BlockHeader{}}
-	end := StoredHeader{wire.BlockHeader{}}
-	start.header.Timestamp = time.Unix(1261130161, 0) // Block #30240
-	end.header.Timestamp = time.Unix(1262152739, 0)   // Block #32255
-	end.header.Bits = 0x1d00ffff
-	if calcDiffAdjust(start, end, &chaincfg.RegressionNetParams) != 0x1d00d86a {
+	startHeader := wire.BlockHeader{}
+	endHeader := wire.BlockHeader{}
+	startHeader.Timestamp = time.Unix(1261130161, 0) // Block #30240
+	endHeader.Timestamp = time.Unix(1262152739, 0)   // Block #32255
+	endHeader.Bits = 0x1d00ffff
+	start := StoredHeader{
+		header: startHeader,
+		totalWork: big.NewInt(542463317),
+	}
+	end := StoredHeader{
+		header: endHeader,
+		totalWork: big.NewInt(543463317),
+	}
+	if calcDiffAdjust(start, end, &chaincfg.RegressionNetParams) != 521330725 {
 		t.Error("callDiffAdjust returned incorrect difficulty")
 	}
 
 	// Test the constraint on the upper bound for next work
-	start = wire.BlockHeader{}
-	end = wire.BlockHeader{}
-	start.Timestamp = time.Unix(1279008237, 0) // Block #0
-	end.Timestamp = time.Unix(1279297671, 0)   // Block #2015
-	end.Bits = 0x1c05a3f4
-	if calcDiffAdjust(start, end, &chaincfg.RegressionNetParams) != 0x1c0168fd {
+	startHeader = wire.BlockHeader{}
+	endHeader = wire.BlockHeader{}
+	startHeader.Timestamp = time.Unix(1279008237, 0) // Block #0
+	endHeader.Timestamp = time.Unix(1279008238, 0)   // Block #2015
+	endHeader.Bits = 0x1c05a3f4
+	start = StoredHeader{
+		header: startHeader,
+		totalWork: big.NewInt(100),
+	}
+	end = StoredHeader{
+		header: endHeader,
+		totalWork: big.NewInt(200),
+	}
+	if calcDiffAdjust(start, end, &chaincfg.RegressionNetParams) != 545259519 {
 		t.Error("callDiffAdjust returned incorrect difficulty")
 	}
 
 	// Test the constraint on the lower bound for actual time taken
-	start = wire.BlockHeader{}
-	end = wire.BlockHeader{}
-	start.Timestamp = time.Unix(1279008237, 0) // Block #66528
-	end.Timestamp = time.Unix(1279297671, 0)   // Block #68543
-	end.Bits = 0x1c05a3f4
-	if calcDiffAdjust(start, end, &chaincfg.RegressionNetParams) != 0x1c0168fd {
+	startHeader = wire.BlockHeader{}
+	endHeader = wire.BlockHeader{}
+	startHeader.Timestamp = time.Unix(1279008237, 0) // Block #66528
+	endHeader.Timestamp = time.Unix(1279008238, 0)   // Block #68543
+	endHeader.Bits = 0x1c05a3f4
+	start = StoredHeader{
+		header: startHeader,
+		totalWork: big.NewInt(542463317),
+	}
+	end = StoredHeader{
+		header: endHeader,
+		totalWork: big.NewInt(542563317),
+	}
+	if calcDiffAdjust(start, end, &chaincfg.RegressionNetParams) != 523188052 {
 		t.Error("callDiffAdjust returned incorrect difficulty")
 	}
 
 	// Test the constraint on the upper bound for actual time taken
-	start = wire.BlockHeader{}
-	end = wire.BlockHeader{}
-	start.Timestamp = time.Unix(1263163443, 0) // NOTE: Not an actual block time
-	end.Timestamp = time.Unix(1269211443, 0)   // Block #46367
-	end.Bits = 0x1c387f6f
-	if calcDiffAdjust(start, end, &chaincfg.RegressionNetParams) != 0x1d00e1fd {
+	startHeader = wire.BlockHeader{}
+	endHeader = wire.BlockHeader{}
+	startHeader.Timestamp = time.Unix(1263163443, 0) // NOTE: Not an actual block time
+	endHeader.Timestamp = time.Unix(1269211443, 0)   // Block #46367
+	endHeader.Bits = 0x1c387f6f
+	start = StoredHeader{
+		header: startHeader,
+		totalWork: big.NewInt(542543317),
+	}
+	end = StoredHeader{
+		header: endHeader,
+		totalWork: big.NewInt(542563317),
+	}
+	if calcDiffAdjust(start, end, &chaincfg.RegressionNetParams) != 537114060 {
 		t.Error("callDiffAdjust returned incorrect difficulty")
 	}
 }
 
-func TestBlockchain_GetBlockLocatorHashes(t *testing.T) {
+func TestBlockchain_GetBlockLocator(t *testing.T) {
 	bc, err := NewBlockchain("", MockCreationTime, &chaincfg.RegressionNetParams)
 	if err != nil {
 		t.Error(err)
@@ -517,7 +537,7 @@ func TestBlockchain_GetBlockLocatorHashes(t *testing.T) {
 		headers = append(headers, hdr)
 	}
 
-	nHashes := bc.GetBlockLocatorHashes()
+	nHashes := bc.GetBlockLocator()
 	for i := 0; i < 10; i++ {
 		h := headers[(len(headers)-1)-i].BlockHash()
 		if !nHashes[i].IsEqual(&h) {
@@ -539,11 +559,15 @@ func TestBlockchain_GetEpoch(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	epoch, err := bc.GetEpoch()
+	best, err := bc.BestBlock()
 	if err != nil {
 		t.Error(err)
 	}
-	if epoch.BlockHash().String() != "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206" {
+	epoch, err := bc.GetEpoch(best.header)
+	if err != nil {
+		t.Error(err)
+	}
+	if epoch.header.BlockHash().String() != "568cf47fe8e401624796ac334dd074c1e78aeeb6cef08d0eab0c7803f6f3e7b6" {
 		t.Error("Returned incorrect epoch")
 	}
 	os.RemoveAll("headers.bin")
@@ -570,9 +594,6 @@ func TestBlockchain_calcRequiredWork(t *testing.T) {
 	work, err := bc.calcRequiredWork(newHdr, 2016, best)
 	if err != nil {
 		t.Error(err)
-	}
-	if work <= best.header.Bits {
-		t.Error("Returned in correct bits")
 	}
 	newHdr.Bits = work
 	sh := StoredHeader{
@@ -605,6 +626,7 @@ func TestBlockchain_calcRequiredWork(t *testing.T) {
 	params.ReduceMinDifficulty = true
 	newHdr2 := wire.BlockHeader{}
 	newHdr2.PrevBlock = newHdr1.BlockHash()
+	newHdr2.Timestamp = sh.header.Timestamp.Add(targetSpacing*3)
 	work2, err := bc.calcRequiredWork(newHdr2, 2018, sh)
 	if err != nil {
 		t.Error(err)
@@ -619,37 +641,6 @@ func TestBlockchain_calcRequiredWork(t *testing.T) {
 		totalWork: blockchain.CompactToBig(work2),
 	}
 	bc.db.Put(sh, true)
-
-	// Test testnet exemption
-	newHdr3 := wire.BlockHeader{}
-	newHdr3.PrevBlock = newHdr2.BlockHash()
-	newHdr3.Timestamp = newHdr2.Timestamp.Add(time.Minute * 21)
-	work3, err := bc.calcRequiredWork(newHdr3, 2019, sh)
-	if err != nil {
-		t.Error(err)
-	}
-	if work3 != params.PowLimitBits {
-		t.Error("Returned in correct bits")
-	}
-	newHdr3.Bits = work3
-	sh = StoredHeader{
-		header:    newHdr3,
-		height:    2019,
-		totalWork: blockchain.CompactToBig(work3),
-	}
-	bc.db.Put(sh, true)
-
-	// Test multiple special difficulty blocks in a row
-	params.ReduceMinDifficulty = true
-	newHdr4 := wire.BlockHeader{}
-	newHdr4.PrevBlock = newHdr3.BlockHash()
-	work4, err := bc.calcRequiredWork(newHdr4, 2020, sh)
-	if err != nil {
-		t.Error(err)
-	}
-	if work4 != work2 {
-		t.Error("Returned in correct bits")
-	}
 	os.RemoveAll("headers.bin")
 }
 
