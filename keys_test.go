@@ -51,7 +51,7 @@ func TestBip44Derivation(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if externalAddr.String() != "17rxURoF96VhmkcEGCj5LNQkmN9HVhWb7F" {
+	if externalAddr.String() != "13oNGHpq8T61TBDijn9PL5E7xzaZRuSZpn" {
 		t.Error("Incorrect Bip44 key derivation")
 	}
 
@@ -63,7 +63,7 @@ func TestBip44Derivation(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if internalAddr.String() != "16wbbYdecq9QzXdxa58q2dYXJRc8sfkE4J" {
+	if internalAddr.String() != "1KLviMR4fvumgw7kxyETabtVJ8hkibzCZJ" {
 		t.Error("Incorrect Bip44 key derivation")
 	}
 }
@@ -78,7 +78,7 @@ func TestKeys_generateChildKey(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if internalAddr.String() != "16wbbYdecq9QzXdxa58q2dYXJRc8sfkE4J" {
+	if internalAddr.String() != "1KLviMR4fvumgw7kxyETabtVJ8hkibzCZJ" {
 		t.Error("generateChildKey returned incorrect key")
 	}
 	externalKey, err := km.generateChildKey(wallet.EXTERNAL, 0)
@@ -86,7 +86,7 @@ func TestKeys_generateChildKey(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if externalAddr.String() != "17rxURoF96VhmkcEGCj5LNQkmN9HVhWb7F" {
+	if externalAddr.String() != "13oNGHpq8T61TBDijn9PL5E7xzaZRuSZpn" {
 		t.Error("generateChildKey returned incorrect key")
 	}
 }
@@ -238,7 +238,7 @@ func TestKeyManager_GetKeyForScript(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	addr, err := btcutil.DecodeAddress("17rxURoF96VhmkcEGCj5LNQkmN9HVhWb7F", &chaincfg.MainNetParams)
+	addr, err := btcutil.DecodeAddress("15NdXzNCFqKVgyyw8JTvHuaSGuyCteQUNk", &chaincfg.MainNetParams)
 	if err != nil {
 		t.Error(err)
 	}
