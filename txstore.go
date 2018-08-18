@@ -23,7 +23,7 @@ type TxStore struct {
 	watchedScripts [][]byte
 	txids          map[string]int32
 	addrMutex      *sync.Mutex
-	txidsMutex     *sync.Mutex
+	txidsMutex     *sync.RWMutex
 	cbMutex        *sync.Mutex
 
 	keyManager *KeyManager
@@ -43,6 +43,7 @@ func NewTxStore(p *chaincfg.Params, db wallet.Datastore, keyManager *KeyManager,
 		keyManager:        keyManager,
 		addrMutex:         new(sync.Mutex),
 		cbMutex:           new(sync.Mutex),
+		txidsMutex:        new(sync.RWMutex),
 		txids:             make(map[string]int32),
 		Datastore:         db,
 		additionalFilters: additionalFilters,
@@ -209,8 +210,10 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32, timestamp time.Time) (ui
 	}
 
 	// Check to see if we've already processed this tx. If so, return.
-	ts.txidsMutex.Lock()
+
+	ts.txidsMutex.RLock()
 	sh, ok := ts.txids[tx.TxHash().String()]
+	ts.txidsMutex.RUnlock()
 	if ok && (sh > 0 || (sh == 0 && height == 0)) {
 		ts.txidsMutex.Unlock()
 		return 1, nil
@@ -242,6 +245,7 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32, timestamp time.Time) (ui
 		// TODO: This will need to test both segwit and legacy once segwit activates
 		PKscripts[i], err = txscript.PayToAddrScript(ts.adrs[i])
 		if err != nil {
+			ts.addrMutex.Unlock()
 			return hits, err
 		}
 	}
@@ -388,7 +392,7 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32, timestamp time.Time) (ui
 			}
 		}
 		cb.BlockTime = timestamp
-
+		ts.txidsMutex.Unlock()
 		if shouldCallback {
 			// Callback on listeners
 			for _, listener := range ts.listeners {
