@@ -441,11 +441,11 @@ func TestBlockchain_calcDiffAdjust(t *testing.T) {
 	endHeader.Timestamp = time.Unix(1262152739, 0)   // Block #32255
 	endHeader.Bits = 0x1d00ffff
 	start := StoredHeader{
-		header: startHeader,
+		header:    startHeader,
 		totalWork: big.NewInt(542463317),
 	}
 	end := StoredHeader{
-		header: endHeader,
+		header:    endHeader,
 		totalWork: big.NewInt(543463317),
 	}
 	if calcDiffAdjust(start, end, &chaincfg.RegressionNetParams) != 521330725 {
@@ -459,11 +459,11 @@ func TestBlockchain_calcDiffAdjust(t *testing.T) {
 	endHeader.Timestamp = time.Unix(1279008238, 0)   // Block #2015
 	endHeader.Bits = 0x1c05a3f4
 	start = StoredHeader{
-		header: startHeader,
+		header:    startHeader,
 		totalWork: big.NewInt(100),
 	}
 	end = StoredHeader{
-		header: endHeader,
+		header:    endHeader,
 		totalWork: big.NewInt(200),
 	}
 	if calcDiffAdjust(start, end, &chaincfg.RegressionNetParams) != 545259519 {
@@ -477,11 +477,11 @@ func TestBlockchain_calcDiffAdjust(t *testing.T) {
 	endHeader.Timestamp = time.Unix(1279008238, 0)   // Block #68543
 	endHeader.Bits = 0x1c05a3f4
 	start = StoredHeader{
-		header: startHeader,
+		header:    startHeader,
 		totalWork: big.NewInt(542463317),
 	}
 	end = StoredHeader{
-		header: endHeader,
+		header:    endHeader,
 		totalWork: big.NewInt(542563317),
 	}
 	if calcDiffAdjust(start, end, &chaincfg.RegressionNetParams) != 523188052 {
@@ -495,11 +495,11 @@ func TestBlockchain_calcDiffAdjust(t *testing.T) {
 	endHeader.Timestamp = time.Unix(1269211443, 0)   // Block #46367
 	endHeader.Bits = 0x1c387f6f
 	start = StoredHeader{
-		header: startHeader,
+		header:    startHeader,
 		totalWork: big.NewInt(542543317),
 	}
 	end = StoredHeader{
-		header: endHeader,
+		header:    endHeader,
 		totalWork: big.NewInt(542563317),
 	}
 	if calcDiffAdjust(start, end, &chaincfg.RegressionNetParams) != 537114060 {
@@ -626,7 +626,7 @@ func TestBlockchain_calcRequiredWork(t *testing.T) {
 	params.ReduceMinDifficulty = true
 	newHdr2 := wire.BlockHeader{}
 	newHdr2.PrevBlock = newHdr1.BlockHash()
-	newHdr2.Timestamp = sh.header.Timestamp.Add(targetSpacing*3)
+	newHdr2.Timestamp = sh.header.Timestamp.Add(targetSpacing * 3)
 	work2, err := bc.calcRequiredWork(newHdr2, 2018, sh)
 	if err != nil {
 		t.Error(err)
