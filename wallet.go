@@ -16,6 +16,7 @@ import (
 	"io"
 	"sync"
 	"time"
+	"github.com/cpacia/BitcoinCash-Wallet/exchangerates"
 )
 
 func setupNetworkParams(params *chaincfg.Params) {
@@ -57,6 +58,8 @@ type SPVWallet struct {
 	running bool
 
 	config *PeerManagerConfig
+
+	exchangeRates wallet.ExchangeRates
 }
 
 var log = logging.MustGetLogger("bitcoin")
@@ -102,12 +105,18 @@ func NewSPVWallet(config *Config) (*SPVWallet, error) {
 			config.HighFee,
 			config.MediumFee,
 			config.LowFee,
-			config.ExchangeRateProvider,
+			nil,
 		),
 		fPositives:    make(chan *peer.Peer),
 		stopChan:      make(chan int),
 		fpAccumulator: make(map[int32]int32),
 		mutex:         new(sync.RWMutex),
+	}
+
+	if !config.DisableExchangeRates {
+		er := exchangerates.NewBitcoinCashPriceFetcher(config.Proxy)
+		w.exchangeRates = er
+		w.feeProvider.exchangeRates = er
 	}
 
 	w.keyManager, err = NewKeyManager(config.DB.Keys(), w.params, w.masterPrivateKey)
@@ -470,7 +479,7 @@ func (w *SPVWallet) DumpHeaders(writer io.Writer) {
 }
 
 func (w *SPVWallet) ExchangeRates() wallet.ExchangeRates {
-	return w.feeProvider.exchangeRates
+	return w.exchangeRates
 }
 
 func (w *SPVWallet) Close() {
