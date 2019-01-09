@@ -364,8 +364,9 @@
                     break;
                 case "address":
                     qr.clear();
-                    qr.makeCode("bitcoincash:" + message.payload);
-                    document.getElementById("displayAddress").innerHTML = message.payload;
+                    qr.makeCode(message.payload);
+                    var split = message.payload.split(":");
+                    document.getElementById("displayAddress").innerHTML = split[1];
                     break;
                 case "spendError":
                     var spendError = document.getElementById("spendError");

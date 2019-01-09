@@ -303,7 +303,7 @@ input::-webkit-inner-spin-button {
 .display-address {
     text-align: center;
     line-height: 33px;
-    width: 287.55px;
+    width: 319.55px;
     height: 32.4px;
     border-radius: 2px;
     background-color: #ffffff;
@@ -312,8 +312,9 @@ input::-webkit-inner-spin-button {
     font-family: "noto_sans";
     font-size: 12.6px;
     color: #252525;
-    margin-left: 75px;
+    margin-left: 59px;
     cursor: pointer;
+    overflow: hidden;
 }
 
 .need {
