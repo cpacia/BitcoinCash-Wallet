@@ -195,7 +195,6 @@ func (x *Start) Execute(args []string) error {
 	f.Close()
 
 	exchangeRates := exchangerates.NewBitcoinCashPriceFetcher(config.Proxy)
-	config.ExchangeRateProvider = exchangeRates
 
 	// Load settings
 	type Fees struct {
@@ -420,7 +419,7 @@ func (x *Start) Execute(args []string) error {
 						w.SendMessage(bootstrap.MessageOut{Name: "spendError", Payload: "Invalid address"})
 						return
 					}
-					_, err = cashWallet.Spend(int64(p.Amount), addr, feeLevel)
+					_, err = cashWallet.Spend(int64(p.Amount), addr, feeLevel, "", false)
 					if err != nil {
 						w.SendMessage(bootstrap.MessageOut{Name: "spendError", Payload: err.Error()})
 					}
