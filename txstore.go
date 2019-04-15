@@ -6,7 +6,11 @@ package bitcoincash
 import (
 	"bytes"
 	"errors"
-	"github.com/OpenBazaar/wallet-interface"
+	"math/big"
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -14,8 +18,8 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/bloom"
-	"sync"
-	"time"
+
+	"github.com/OpenBazaar/wallet-interface"
 )
 
 type TxStore struct {
@@ -258,7 +262,7 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32, timestamp time.Time) (ui
 		// Ignore the error here because the sender could have used and exotic script
 		// for his change and we don't want to fail in that case.
 		addr, _ := scriptToAddress(txout.PkScript, ts.params)
-		out := wallet.TransactionOutput{Address: addr, Value: txout.Value, Index: uint32(i)}
+		out := wallet.TransactionOutput{Address: addr, Value: *big.NewInt(txout.Value), Index: uint32(i)}
 		for _, script := range PKscripts {
 			if bytes.Equal(txout.PkScript, script) { // new utxo found
 				scriptAddress, _ := ts.extractScriptAddress(txout.PkScript)
@@ -269,12 +273,12 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32, timestamp time.Time) (ui
 				}
 				newu := wallet.Utxo{
 					AtHeight:     height,
-					Value:        txout.Value,
+					Value:        strconv.FormatInt(txout.Value, 10),
 					ScriptPubkey: txout.PkScript,
 					Op:           newop,
 					WatchOnly:    false,
 				}
-				value += newu.Value
+				value += txout.Value
 				ts.Utxos().Put(newu)
 				hits++
 				break
@@ -289,7 +293,7 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32, timestamp time.Time) (ui
 				}
 				newu := wallet.Utxo{
 					AtHeight:     height,
-					Value:        txout.Value,
+					Value:        strconv.FormatInt(txout.Value, 10),
 					ScriptPubkey: txout.PkScript,
 					Op:           newop,
 					WatchOnly:    true,
@@ -321,8 +325,9 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32, timestamp time.Time) (ui
 				ts.Stxos().Put(st)
 				ts.Utxos().Delete(u)
 				utxos = append(utxos[:i], utxos[i+1:]...)
+				val0, _ := new(big.Int).SetString(u.Value, 10)
 				if !u.WatchOnly {
-					value -= u.Value
+					value -= val0.Int64()
 					hits++
 				} else {
 					matchesWatchOnly = true
@@ -336,7 +341,7 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32, timestamp time.Time) (ui
 					OutpointHash:  u.Op.Hash.CloneBytes(),
 					OutpointIndex: u.Op.Index,
 					LinkedAddress: addr,
-					Value:         u.Value,
+					Value:         *val0,
 				}
 				cb.Inputs = append(cb.Inputs, in)
 				break
@@ -371,12 +376,12 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32, timestamp time.Time) (ui
 		txn, err := ts.Txns().Get(tx.TxHash())
 		shouldCallback := false
 		if err != nil {
-			cb.Value = value
+			cb.Value = *big.NewInt(value)
 			txn.Timestamp = timestamp
 			shouldCallback = true
 			var buf bytes.Buffer
 			tx.BtcEncode(&buf, 1, wire.BaseEncoding)
-			ts.Txns().Put(buf.Bytes(), tx.TxHash().String(), int(value), int(height), txn.Timestamp, hits == 0)
+			ts.Txns().Put(buf.Bytes(), tx.TxHash().String(), strconv.FormatInt(value, 10), int(height), txn.Timestamp, hits == 0)
 			ts.txids[tx.TxHash().String()] = height
 		}
 		// Let's check the height before committing so we don't allow rogue peers to send us a lose
@@ -385,7 +390,8 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32, timestamp time.Time) (ui
 			ts.Txns().UpdateHeight(tx.TxHash(), int(height), timestamp)
 			ts.txids[tx.TxHash().String()] = height
 			if height > 0 {
-				cb.Value = txn.Value
+				val0, _ := new(big.Int).SetString(txn.Value, 10)
+				cb.Value = *val0
 				shouldCallback = true
 			}
 		}
