@@ -138,7 +138,7 @@ func (w *SPVWallet) BumpFee(txid chainhash.Hash) (*chainhash.Hash, error) {
 		if s.SpendTxid.IsEqual(&txid) {
 			r := bytes.NewReader(txn.Bytes)
 			msgTx := wire.NewMsgTx(1)
-			msgTx.BtcDecode(r, 1)
+			msgTx.BchDecode(r, 1)
 			for i, output := range msgTx.TxOut {
 				key, err := w.txstore.GetKeyForScript(output.PkScript)
 				if key != nil && err == nil { // This is our change output

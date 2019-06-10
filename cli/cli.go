@@ -918,7 +918,7 @@ func (x *Multisign) Execute(args []string) error {
 	if multsignInfo.Broadcast {
 		r := bytes.NewReader(resp.Tx)
 		msgTx := wire.NewMsgTx(1)
-		msgTx.BtcDecode(r, 1, wire.BaseEncoding)
+		msgTx.BchDecode(r, 1, wire.BaseEncoding)
 		fmt.Println(msgTx.TxHash().String())
 	} else {
 		fmt.Println(hex.EncodeToString(resp.Tx))
