@@ -5,11 +5,11 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"github.com/OpenBazaar/wallet-interface"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/gcash/bchd/chaincfg"
+	"github.com/gcash/bchd/chaincfg/chainhash"
+	"github.com/gcash/bchd/txscript"
+	"github.com/gcash/bchd/wire"
+	"github.com/gcash/bchutil/hdkeychain"
 	"testing"
 	"time"
 )
@@ -70,7 +70,7 @@ func TestTxStore_PopulateAdrs(t *testing.T) {
 	tx1Bytes, err := hex.DecodeString(tx1Hex)
 	r := bytes.NewReader(tx1Bytes)
 	tx := wire.NewMsgTx(1)
-	tx.BtcDecode(r, 1, wire.WitnessEncoding)
+	tx.BchDecode(r, 1, wire.WitnessEncoding)
 
 	err = txStore.Txns().Put(tx1Bytes, tx.TxHash().String(), 100000, 0, time.Now(), false)
 	err = txStore.PopulateAdrs()
@@ -145,7 +145,7 @@ func TestTxStore_CheckDoubleSpends(t *testing.T) {
 	tx1Bytes, err := hex.DecodeString(tx1Hex)
 	r := bytes.NewReader(tx1Bytes)
 	tx1 := wire.NewMsgTx(1)
-	tx1.BtcDecode(r, 1, wire.WitnessEncoding)
+	tx1.BchDecode(r, 1, wire.WitnessEncoding)
 	txStore.Txns().Put(tx1Bytes, tx1.TxHash().String(), 100, 400000, time.Now(), false)
 	doubles, err := txStore.CheckDoubleSpends(tx1)
 	if err != nil {
@@ -235,7 +235,7 @@ func TestTxStore_markAsDead(t *testing.T) {
 	tx1Bytes, err := hex.DecodeString(tx1Hex)
 	r := bytes.NewReader(tx1Bytes)
 	tx1 := wire.NewMsgTx(1)
-	tx1.BtcDecode(r, 1, wire.WitnessEncoding)
+	tx1.BchDecode(r, 1, wire.WitnessEncoding)
 	txStore.Txns().Put(tx1Bytes, tx1.TxHash().String(), 100, 0, time.Now(), false)
 
 	h1 := tx1.TxHash()
@@ -277,7 +277,7 @@ func TestTxStore_markAsDead(t *testing.T) {
 	tx2Bytes, err := hex.DecodeString(tx2Hex)
 	r = bytes.NewReader(tx2Bytes)
 	tx2 := wire.NewMsgTx(1)
-	tx2.BtcDecode(r, 1, wire.WitnessEncoding)
+	tx2.BchDecode(r, 1, wire.WitnessEncoding)
 	txStore.Txns().Put(tx2Bytes, tx2.TxHash().String(), 100, 0, time.Now(), false)
 
 	op = wire.NewOutPoint(&h1, 0)
@@ -399,7 +399,7 @@ func TestTxStore_markAsDead(t *testing.T) {
 	tx3Bytes, err := hex.DecodeString(tx3Hex)
 	r = bytes.NewReader(tx3Bytes)
 	tx3 := wire.NewMsgTx(1)
-	tx3.BtcDecode(r, 1, wire.WitnessEncoding)
+	tx3.BchDecode(r, 1, wire.WitnessEncoding)
 	txStore.Txns().Put(tx3Bytes, tx3.TxHash().String(), 100, 0, time.Now(), false)
 
 	op = wire.NewOutPoint(&h2, 0)
@@ -472,21 +472,21 @@ func TestTxStore_processReorg(t *testing.T) {
 	tx1Bytes, err := hex.DecodeString(tx1Hex)
 	r := bytes.NewReader(tx1Bytes)
 	tx1 := wire.NewMsgTx(1)
-	tx1.BtcDecode(r, 1, wire.WitnessEncoding)
+	tx1.BchDecode(r, 1, wire.WitnessEncoding)
 	txStore.Txns().Put(tx1Bytes, tx1.TxHash().String(), 100, 400000, time.Now(), false)
 
 	tx2Hex := "01000000018dce6a1748a0b35475903ae654bb0c000fa004a8a83f16a18464de473da42b1c010000006a473044022001c7c890110c94a22bbb004b75364b03b157cb0f71a97c419a4ed80f0155649b0220257f54fbda579e0c4063f980ddd2ea9bfa591c42e759cc0cd78370bd1d24afba01210245a1619fc1feb837ed54a9dfa71d7abea445ef193fd1f9fa0d5b4141980bff11ffffffff0280a4bf070000000017a9143cb6156a7f8b5c8e72b764e00fbdfe31e77fe86187084cd600010000001976a914a4cf57fd8d825995d5fd5104675ccedd39cf924988ac00000000"
 	tx2Bytes, err := hex.DecodeString(tx2Hex)
 	r = bytes.NewReader(tx2Bytes)
 	tx2 := wire.NewMsgTx(1)
-	tx2.BtcDecode(r, 1, wire.WitnessEncoding)
+	tx2.BchDecode(r, 1, wire.WitnessEncoding)
 	txStore.Txns().Put(tx2Bytes, tx2.TxHash().String(), 100, 400001, time.Now(), false)
 
 	tx3Hex := "0100000001dc8910ef79c4bc690cdf3e335c0f88757ba176e00057cb63ccbae6a13205d4cf010000006a47304402203c5203c53b463ac459c93954513ffb32c7056c5f2a6c825362afba21f5d1c88202207a121f13fa0f2cfe1392d2b2a4139485cc4251058a6cccc1e3c25970104df5cd012102530f811d7da235aad895cba33e2d42d1092140d1c6e6b4d965db861f5988d64affffffff02fc2f0600000000001976a9145d9e4978b7998369cda5ce3ae79c6db25957e91d88ac29dc6a16000000001976a9145cd1285c75daa5adc4c5b979b0f96c01dd08dfec88ac00000000"
 	tx3Bytes, err := hex.DecodeString(tx3Hex)
 	r = bytes.NewReader(tx3Bytes)
 	tx3 := wire.NewMsgTx(1)
-	tx3.BtcDecode(r, 1, wire.WitnessEncoding)
+	tx3.BchDecode(r, 1, wire.WitnessEncoding)
 	txStore.Txns().Put(tx3Bytes, tx3.TxHash().String(), 100, 400002, time.Now(), false)
 
 	h1 := tx1.TxHash()
@@ -567,7 +567,7 @@ func TestTxStore_Ingest(t *testing.T) {
 	tx1Bytes, err := hex.DecodeString(tx1Hex)
 	r := bytes.NewReader(tx1Bytes)
 	tx1 := wire.NewMsgTx(1)
-	tx1.BtcDecode(r, 1, wire.WitnessEncoding)
+	tx1.BchDecode(r, 1, wire.WitnessEncoding)
 
 	// Ingest no hits
 	hits, err := txStore.Ingest(tx1, 0, time.Now())
@@ -623,7 +623,7 @@ func TestTxStore_Ingest(t *testing.T) {
 	tx2Bytes, err := hex.DecodeString(tx2Hex)
 	r = bytes.NewReader(tx2Bytes)
 	tx2 := wire.NewMsgTx(1)
-	tx2.BtcDecode(r, 1, wire.WitnessEncoding)
+	tx2.BchDecode(r, 1, wire.WitnessEncoding)
 	tx2.AddTxIn(tx1.TxIn[0])
 	hits, err = txStore.Ingest(tx2, 0, time.Now())
 	if err != nil {
@@ -658,7 +658,7 @@ func TestTxStore_Ingest(t *testing.T) {
 	tx3Bytes, err := hex.DecodeString(tx3Hex)
 	r = bytes.NewReader(tx3Bytes)
 	tx3 := wire.NewMsgTx(1)
-	tx3.BtcDecode(r, 1, wire.WitnessEncoding)
+	tx3.BchDecode(r, 1, wire.WitnessEncoding)
 	script, err = hex.DecodeString("a914ac66e5ca929ded3d146c77ae988886050b1a8e5287")
 	if err != nil {
 		t.Error(err)
@@ -684,7 +684,7 @@ func TestTxStore_Ingest(t *testing.T) {
 	tx4Bytes, err := hex.DecodeString(tx4Hex)
 	r = bytes.NewReader(tx4Bytes)
 	tx4 := wire.NewMsgTx(1)
-	tx4.BtcDecode(r, 1, wire.WitnessEncoding)
+	tx4.BchDecode(r, 1, wire.WitnessEncoding)
 	txStore.Ingest(tx1, 0, time.Now())
 
 	h := tx1.TxHash()
@@ -714,7 +714,7 @@ func TestTxStore_Ingest(t *testing.T) {
 	tx5Bytes, err := hex.DecodeString(tx5Hex)
 	r = bytes.NewReader(tx5Bytes)
 	tx5 := wire.NewMsgTx(1)
-	tx5.BtcDecode(r, 1, wire.WitnessEncoding)
+	tx5.BchDecode(r, 1, wire.WitnessEncoding)
 
 	h3 := tx3.TxHash()
 	op3 := wire.NewOutPoint(&h3, 2)

@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"fmt"
-	"github.com/btcsuite/btcd/addrmgr"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/connmgr"
-	"github.com/btcsuite/btcd/peer"
-	"github.com/btcsuite/btcd/wire"
-	"github.com/cpacia/bchutil"
+
+	"github.com/gcash/bchd/addrmgr"
+	"github.com/gcash/bchd/chaincfg"
+	"github.com/gcash/bchd/chaincfg/chainhash"
+	"github.com/gcash/bchd/connmgr"
+	"github.com/gcash/bchd/peer"
+	"github.com/gcash/bchd/wire"
 	"golang.org/x/net/proxy"
 )
 
@@ -206,7 +206,7 @@ func (pm *PeerManager) onConnection(req *connmgr.ConnReq, conn net.Conn) {
 func (pm *PeerManager) onVerack(p *peer.Peer, msg *wire.MsgVerAck) {
 	// Check this peer offers bloom filtering services. If not dump them.
 	p.NA().Services = p.Services()
-	if !(p.NA().HasService(wire.SFNodeBloom) && p.NA().HasService(wire.SFNodeNetwork) && p.NA().HasService(bchutil.SFNodeBitcoinCash)) {
+	if !(p.NA().HasService(wire.SFNodeBloom) && p.NA().HasService(wire.SFNodeNetwork) && p.NA().HasService(wire.SFNodeBitcoinCash)) {
 		// onDisconnection will be called
 		// which will remove the peer from openPeers
 		log.Warningf("Peer %s does not support bloom filtering, diconnecting", p)
@@ -286,7 +286,8 @@ func (pm *PeerManager) getNewAddress() (net.Addr, error) {
 // Query the DNS seeds and pass the addresses into the address manager.
 func (pm *PeerManager) queryDNSSeeds() {
 	wg := new(sync.WaitGroup)
-	for _, seed := range bchutil.GetDNSSeed(pm.peerConfig.ChainParams) {
+
+	for _, seed := range pm.peerConfig.ChainParams.DNSSeeds {
 		wg.Add(1)
 		go func(host string) {
 			returnedAddresses := 0

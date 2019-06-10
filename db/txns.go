@@ -3,11 +3,12 @@ package db
 import (
 	"bytes"
 	"database/sql"
-	"github.com/OpenBazaar/wallet-interface"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/wire"
 	"sync"
 	"time"
+
+	"github.com/OpenBazaar/wallet-interface"
+	"github.com/gcash/bchd/chaincfg/chainhash"
+	"github.com/gcash/bchd/wire"
 )
 
 type TxnsDB struct {
@@ -61,7 +62,7 @@ func (t *TxnsDB) Get(txid chainhash.Hash) (wallet.Txn, error) {
 	}
 	r := bytes.NewReader(ret)
 	msgTx := wire.NewMsgTx(1)
-	msgTx.BtcDecode(r, 1, wire.BaseEncoding)
+	msgTx.BchDecode(r, 1, wire.BaseEncoding)
 	watchOnly := false
 	if watchOnlyInt > 0 {
 		watchOnly = true
@@ -98,7 +99,7 @@ func (t *TxnsDB) GetAll(includeWatchOnly bool) ([]wallet.Txn, error) {
 		}
 		r := bytes.NewReader(tx)
 		msgTx := wire.NewMsgTx(1)
-		msgTx.BtcDecode(r, 1, wire.BaseEncoding)
+		msgTx.BchDecode(r, 1, wire.BaseEncoding)
 		watchOnly := false
 		if watchOnlyInt > 0 {
 			if !includeWatchOnly {

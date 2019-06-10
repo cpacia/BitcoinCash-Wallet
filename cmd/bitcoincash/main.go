@@ -9,16 +9,16 @@ import (
 	"github.com/asticode/go-astilectron"
 	"github.com/asticode/go-astilog"
 	"github.com/atotto/clipboard"
-	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcutil"
-	bc "github.com/cpacia/BitcoinCash-Wallet"
-	"github.com/cpacia/BitcoinCash-Wallet/api"
-	"github.com/cpacia/BitcoinCash-Wallet/cli"
-	"github.com/cpacia/BitcoinCash-Wallet/db"
-	"github.com/cpacia/BitcoinCash-Wallet/exchangerates"
-	"github.com/cpacia/BitcoinCash-Wallet/gui"
-	"github.com/cpacia/BitcoinCash-Wallet/gui/bootstrap"
+	"github.com/gcash/bchd/bchec"
+	"github.com/gcash/bchd/chaincfg"
+	"github.com/gcash/bchutil"
+	bc "github.com/bubbajoe/BitcoinCash-Wallet"
+	"github.com/bubbajoe/BitcoinCash-Wallet/api"
+	"github.com/bubbajoe/BitcoinCash-Wallet/cli"
+	"github.com/bubbajoe/BitcoinCash-Wallet/db"
+	"github.com/bubbajoe/BitcoinCash-Wallet/exchangerates"
+	"github.com/bubbajoe/BitcoinCash-Wallet/gui"
+	"github.com/bubbajoe/BitcoinCash-Wallet/gui/bootstrap"
 	"github.com/fatih/color"
 	"github.com/jessevdk/go-flags"
 	"github.com/natefinch/lumberjack"
@@ -377,8 +377,8 @@ func (x *Start) Execute(args []string) error {
 						astilog.Errorf("Failed to get exchange rate")
 						return
 					}
-					btcVal := float64(confirmed) / 100000000
-					fiatVal := float64(btcVal) * rate
+					bchVal := float64(confirmed) / 100000000
+					fiatVal := float64(bchVal) * rate
 					height, _ := cashWallet.ChainTip()
 
 					st := Stats{
@@ -415,7 +415,7 @@ func (x *Start) Execute(args []string) error {
 					default:
 						feeLevel = wallet.NORMAL
 					}
-					addr, err := btcutil.DecodeAddress(p.Address, cashWallet.Params())
+					addr, err := bchutil.DecodeAddress(p.Address, cashWallet.Params())
 					if err != nil {
 						w.SendMessage(bootstrap.MessageOut{Name: "spendError", Payload: "Invalid address"})
 						return
@@ -500,11 +500,11 @@ func (x *Start) Execute(args []string) error {
 						astilog.Errorf("Unmarshaling %s failed", m.Payload)
 						return
 					}
-					var privKey *btcec.PrivateKey
+					var privKey *bchec.PrivateKey
 					compress := true
 					keyBytes, err := hex.DecodeString(p.Key)
 					if err != nil {
-						wif, err := btcutil.DecodeWIF(p.Key)
+						wif, err := bchutil.DecodeWIF(p.Key)
 						if err != nil {
 							w.SendMessage(bootstrap.MessageOut{Name: "importError", Payload: err.Error()})
 							return
@@ -516,7 +516,7 @@ func (x *Start) Execute(args []string) error {
 							w.SendMessage(bootstrap.MessageOut{Name: "importError", Payload: "Invalid key"})
 							return
 						}
-						privKey, _ = btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
+						privKey, _ = bchec.PrivKeyFromBytes(bchec.S256(), keyBytes)
 					}
 					cashWallet.ImportKey(privKey, compress)
 					var t time.Time

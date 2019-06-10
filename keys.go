@@ -2,9 +2,9 @@ package bitcoincash
 
 import (
 	"github.com/OpenBazaar/wallet-interface"
-	"github.com/btcsuite/btcd/chaincfg"
-	hd "github.com/btcsuite/btcutil/hdkeychain"
 	"github.com/btcsuite/goleveldb/leveldb/errors"
+	"github.com/gcash/bchd/chaincfg"
+	hd "github.com/gcash/bchutil/hdkeychain"
 )
 
 const LOOKAHEADWINDOW = 100

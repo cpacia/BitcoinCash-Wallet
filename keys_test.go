@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"encoding/hex"
 	"github.com/OpenBazaar/wallet-interface"
-	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcutil"
-	"github.com/btcsuite/btcutil/hdkeychain"
+	"github.com/gcash/bchd/bchec"
+	"github.com/gcash/bchd/chaincfg"
+	"github.com/gcash/bchd/txscript"
+	"github.com/gcash/bchutil"
+	"github.com/gcash/bchutil/hdkeychain"
 	"testing"
 )
 
@@ -238,7 +238,7 @@ func TestKeyManager_GetKeyForScript(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	addr, err := btcutil.DecodeAddress("15NdXzNCFqKVgyyw8JTvHuaSGuyCteQUNk", &chaincfg.MainNetParams)
+	addr, err := bchutil.DecodeAddress("15NdXzNCFqKVgyyw8JTvHuaSGuyCteQUNk", &chaincfg.MainNetParams)
 	if err != nil {
 		t.Error(err)
 	}
@@ -256,7 +256,7 @@ func TestKeyManager_GetKeyForScript(t *testing.T) {
 	if testAddr.String() != addr.String() {
 		t.Error("Returned incorrect key")
 	}
-	importKey, err := btcec.NewPrivateKey(btcec.S256())
+	importKey, err := bchec.NewPrivateKey(bchec.S256())
 	if err != nil {
 		t.Error(err)
 	}

@@ -3,21 +3,21 @@ package api
 import (
 	"encoding/hex"
 	"errors"
+	"net"
+	"sync"
+
 	"github.com/OpenBazaar/wallet-interface"
-	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcutil"
-	"github.com/btcsuite/btcutil/hdkeychain"
-	"github.com/cpacia/BitcoinCash-Wallet"
-	"github.com/cpacia/BitcoinCash-Wallet/api/pb"
-	"github.com/cpacia/bchutil"
+	bitcoincash "github.com/bubbajoe/BitcoinCash-Wallet"
+	"github.com/bubbajoe/BitcoinCash-Wallet/api/pb"
+	"github.com/gcash/bchd/bchec"
+	"github.com/gcash/bchd/chaincfg"
+	"github.com/gcash/bchd/chaincfg/chainhash"
+	"github.com/gcash/bchutil"
+	"github.com/gcash/bchutil/hdkeychain"
 	"github.com/golang/protobuf/ptypes"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"net"
-	"sync"
 )
 
 const Addr = "127.0.0.1:8234"
@@ -109,7 +109,7 @@ func (s *server) HasKey(ctx context.Context, in *pb.Address) (*pb.BoolResponse, 
 	default:
 		return nil, errors.New("Unknown network parameters")
 	}
-	addr, err := btcutil.DecodeAddress(in.Addr, &p)
+	addr, err := bchutil.DecodeAddress(in.Addr, &p)
 	if err != nil {
 		return nil, err
 	}
@@ -269,7 +269,7 @@ func (s *server) AddWatchedAddress(ctx context.Context, in *pb.Address) (*pb.Emp
 	default:
 		return nil, errors.New("Unknown network parameters")
 	}
-	addr, err := btcutil.DecodeAddress(in.Addr, &p)
+	addr, err := bchutil.DecodeAddress(in.Addr, &p)
 	if err != nil {
 		return nil, err
 	}
@@ -317,9 +317,9 @@ func (s *server) SweepAddress(ctx context.Context, in *pb.SweepInfo) (*pb.Txid, 
 	default:
 		return nil, errors.New("Unknown network parameters")
 	}
-	var addr *btcutil.Address
+	var addr *bchutil.Address
 	if in.Address != "" {
-		a, err := btcutil.DecodeAddress(in.Address, &p)
+		a, err := bchutil.DecodeAddress(in.Address, &p)
 		if err != nil {
 			return nil, err
 		}
@@ -328,7 +328,7 @@ func (s *server) SweepAddress(ctx context.Context, in *pb.SweepInfo) (*pb.Txid, 
 		addr = nil
 	}
 	var key *hdkeychain.ExtendedKey
-	wif, err := btcutil.DecodeWIF(in.Key)
+	wif, err := bchutil.DecodeWIF(in.Key)
 	if err == nil {
 		key = hdkeychain.NewExtendedKey(
 			p.HDPrivateKeyID[:],
@@ -424,7 +424,7 @@ func (s *server) CreateMultisigSignature(ctx context.Context, in *pb.CreateMulti
 		return nil, errors.New("Unknown network parameters")
 	}
 	var key *hdkeychain.ExtendedKey
-	wif, err := btcutil.DecodeWIF(in.Key)
+	wif, err := bchutil.DecodeWIF(in.Key)
 	if err == nil {
 		key = hdkeychain.NewExtendedKey(
 			p.HDPrivateKeyID[:],
@@ -603,7 +603,7 @@ func (s *server) GetKey(ctx context.Context, in *pb.Address) (*pb.Key, error) {
 	default:
 		return nil, errors.New("Unknown network parameters")
 	}
-	addr, err := btcutil.DecodeAddress(in.Addr, &p)
+	addr, err := bchutil.DecodeAddress(in.Addr, &p)
 	if err != nil {
 		return nil, err
 	}
@@ -611,7 +611,7 @@ func (s *server) GetKey(ctx context.Context, in *pb.Address) (*pb.Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	wif, err := btcutil.NewWIF(key, &p, true)
+	wif, err := bchutil.NewWIF(key, &p, true)
 	if err != nil {
 		return nil, err
 	}
@@ -634,7 +634,7 @@ func (s *server) ListKeys(ctx context.Context, in *pb.Empty) (*pb.Keys, error) {
 	var list []*pb.Key
 	for _, key := range keys {
 		ret := new(pb.Key)
-		wif, err := btcutil.NewWIF(&key, s.w.Params(), true)
+		wif, err := bchutil.NewWIF(&key, s.w.Params(), true)
 		if err != nil {
 			return nil, err
 		}
@@ -645,11 +645,11 @@ func (s *server) ListKeys(ctx context.Context, in *pb.Empty) (*pb.Keys, error) {
 }
 
 func (s *server) ImportKey(ctx context.Context, in *pb.ImportedKey) (*pb.Empty, error) {
-	var privKey *btcec.PrivateKey
+	var privKey *bchec.PrivateKey
 	compress := true
 	keyBytes, err := hex.DecodeString(in.Key)
 	if err != nil {
-		wif, err := btcutil.DecodeWIF(in.Key)
+		wif, err := bchutil.DecodeWIF(in.Key)
 		if err != nil {
 			return nil, err
 		}
@@ -659,7 +659,7 @@ func (s *server) ImportKey(ctx context.Context, in *pb.ImportedKey) (*pb.Empty, 
 		if len(keyBytes) != 32 {
 			return nil, errors.New("Hex private keys must be exactly 64 characters")
 		}
-		privKey, _ = btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
+		privKey, _ = bchec.PrivKeyFromBytes(bchec.S256(), keyBytes)
 	}
 	err = s.w.ImportKey(privKey, compress)
 	if err != nil {

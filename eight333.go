@@ -1,12 +1,13 @@
 package bitcoincash
 
 import (
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	peerpkg "github.com/btcsuite/btcd/peer"
-	"github.com/btcsuite/btcd/wire"
 	"net"
 	"time"
+
+	"github.com/gcash/bchd/chaincfg"
+	"github.com/gcash/bchd/chaincfg/chainhash"
+	peerpkg "github.com/gcash/bchd/peer"
+	"github.com/gcash/bchd/wire"
 )
 
 const (
@@ -723,7 +724,7 @@ func (ws *WireService) handleUpdateFiltersMsg() {
 // are in the memory pool (either the main pool or orphan pool).
 func (ws *WireService) haveInventory(invVect *wire.InvVect) (bool, error) {
 	switch invVect.Type {
-	case wire.InvTypeWitnessBlock:
+	case wire.InvTypeFilteredBlock:
 		fallthrough
 	case wire.InvTypeBlock:
 		// Ask chain if the block is known to it in any form (main

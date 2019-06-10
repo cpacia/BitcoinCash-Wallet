@@ -5,9 +5,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"github.com/OpenBazaar/wallet-interface"
-	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/wire"
+	"github.com/gcash/bchd/bchec"
+	"github.com/gcash/bchd/chaincfg/chainhash"
+	"github.com/gcash/bchd/wire"
 	"sort"
 	"strconv"
 	"testing"
@@ -46,7 +46,7 @@ type keyStoreEntry struct {
 	scriptAddress []byte
 	path          wallet.KeyPath
 	used          bool
-	key           *btcec.PrivateKey
+	key           *bchec.PrivateKey
 }
 
 type mockKeyStore struct {
@@ -58,7 +58,7 @@ func (m *mockKeyStore) Put(scriptAddress []byte, keyPath wallet.KeyPath) error {
 	return nil
 }
 
-func (m *mockKeyStore) ImportKey(scriptAddress []byte, key *btcec.PrivateKey) error {
+func (m *mockKeyStore) ImportKey(scriptAddress []byte, key *bchec.PrivateKey) error {
 	kp := wallet.KeyPath{Purpose: wallet.EXTERNAL, Index: -1}
 	m.keys[hex.EncodeToString(scriptAddress)] = &keyStoreEntry{scriptAddress, kp, false, key}
 	return nil
@@ -96,7 +96,7 @@ func (m *mockKeyStore) GetPathForKey(scriptAddress []byte) (wallet.KeyPath, erro
 	return key.path, nil
 }
 
-func (m *mockKeyStore) GetKey(scriptAddress []byte) (*btcec.PrivateKey, error) {
+func (m *mockKeyStore) GetKey(scriptAddress []byte) (*bchec.PrivateKey, error) {
 	for _, k := range m.keys {
 		if k.path.Index == -1 && bytes.Equal(scriptAddress, k.scriptAddress) {
 			return k.key, nil
@@ -105,8 +105,8 @@ func (m *mockKeyStore) GetKey(scriptAddress []byte) (*btcec.PrivateKey, error) {
 	return nil, errors.New("Not found")
 }
 
-func (m *mockKeyStore) GetImported() ([]*btcec.PrivateKey, error) {
-	var keys []*btcec.PrivateKey
+func (m *mockKeyStore) GetImported() ([]*bchec.PrivateKey, error) {
+	var keys []*bchec.PrivateKey
 	for _, k := range m.keys {
 		if k.path.Index == -1 {
 			keys = append(keys, k.key)

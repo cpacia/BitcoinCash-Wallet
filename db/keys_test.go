@@ -6,7 +6,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"github.com/OpenBazaar/wallet-interface"
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/gcash/bchd/bchec"
 	"sync"
 	"testing"
 )
@@ -69,7 +69,7 @@ func TestPutKey(t *testing.T) {
 }
 
 func TestImportKey(t *testing.T) {
-	key, err := btcec.NewPrivateKey(btcec.S256())
+	key, err := bchec.NewPrivateKey(bchec.S256())
 	if err != nil {
 		t.Error(err)
 	}
@@ -112,7 +112,7 @@ func TestImportKey(t *testing.T) {
 }
 
 func TestKeysDB_GetImported(t *testing.T) {
-	key, err := btcec.NewPrivateKey(btcec.S256())
+	key, err := bchec.NewPrivateKey(bchec.S256())
 	if err != nil {
 		t.Error(err)
 	}
@@ -207,7 +207,7 @@ func TestGetPathForKey(t *testing.T) {
 }
 
 func TestGetKey(t *testing.T) {
-	key, err := btcec.NewPrivateKey(btcec.S256())
+	key, err := bchec.NewPrivateKey(bchec.S256())
 	if err != nil {
 		t.Error(err)
 	}

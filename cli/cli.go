@@ -7,10 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/OpenBazaar/jsonpb"
-	"github.com/btcsuite/btcd/wire"
-	bc "github.com/cpacia/BitcoinCash-Wallet"
-	"github.com/cpacia/BitcoinCash-Wallet/api"
-	"github.com/cpacia/BitcoinCash-Wallet/api/pb"
+	"github.com/gcash/bchd/wire"
+	bc "github.com/bubbajoe/BitcoinCash-Wallet"
+	"github.com/bubbajoe/BitcoinCash-Wallet/api"
+	"github.com/bubbajoe/BitcoinCash-Wallet/api/pb"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/jessevdk/go-flags"
 	"golang.org/x/net/context"
@@ -918,7 +918,7 @@ func (x *Multisign) Execute(args []string) error {
 	if multsignInfo.Broadcast {
 		r := bytes.NewReader(resp.Tx)
 		msgTx := wire.NewMsgTx(1)
-		msgTx.BtcDecode(r, 1, wire.BaseEncoding)
+		msgTx.BchDecode(r, 1, wire.BaseEncoding)
 		fmt.Println(msgTx.TxHash().String())
 	} else {
 		fmt.Println(hex.EncodeToString(resp.Tx))

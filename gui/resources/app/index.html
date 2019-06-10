@@ -30,7 +30,7 @@
     <div class="Wallet">
         <div class="Stats">
             <div class="Funds">Funds</div>
-            <div id="btc-balance" class="Stat pad"></div>
+            <div id="bch-balance" class="Stat pad"></div>
             <div class="label">Bitcoin</div>
             <div id="fiat-balance" class="Stat pad"></div>
             <div id="fiat-balance-label" class="label"></div>
@@ -353,7 +353,7 @@
                     statsLoop();
                     break;
                 case "statsUpdate":
-                    document.getElementById("btc-balance").innerHTML = satoshiToBTCUnit(message.payload.confirmed);
+                    document.getElementById("bch-balance").innerHTML = satoshiToBTCUnit(message.payload.confirmed);
                     document.getElementById("fiat-balance").innerHTML = settings.fiatSymbol + message.payload.fiat;
                     document.getElementById("nTransactions").innerHTML = message.payload.transactions;
                     document.getElementById("exchangeRate").innerHTML = settings.fiatSymbol + message.payload.exchangeRate;
@@ -434,25 +434,25 @@
         var leftTopDiv = document.createElement("div");
         leftTopDiv.classList.add('flex');
         var fiatDiv = document.createElement("div");
-        var btcValue = satoshiToBTCUnit(tx.Value);
+        var bchValue = satoshiToBTCUnit(tx.Value);
         var sign = "+";
         if (parseFloat(tx.Value) < 0) {
-            btcValue *= -1;
+            bchValue *= -1;
             sign = "-"
         }
         fiatDiv.innerHTML = sign + makeFiatValue(tx.Value);
         fiatDiv.id = tx.Txid + "-fiat";
         fiatDiv.classList.add('bold', 'tx-margin');
-        var btcDiv = document.createElement("div");
-        btcDiv.innerHTML = "(" + btcValue + " " + settings.bitcoinUnit + ")";
-        btcDiv.classList.add('bold', 'tx-margin');
+        var bchDiv = document.createElement("div");
+        bchDiv.innerHTML = "(" + bchValue + " " + settings.bitcoinUnit + ")";
+        bchDiv.classList.add('bold', 'tx-margin');
 
         var iconDiv = document.createElement("div");
         iconDiv.id = tx.Txid + "-icon";
 
         leftTopDiv.appendChild(iconDiv);
         leftTopDiv.appendChild(fiatDiv);
-        leftTopDiv.appendChild(btcDiv);
+        leftTopDiv.appendChild(bchDiv);
         leftTopDiv.classList.add('tx-text');
 
         var leftBottomDiv = document.createElement("div");
@@ -514,8 +514,8 @@
     }
 
     function makeFiatValue(val) {
-        var btcValue = val / 100000000;
-        var fiatValue = (btcValue*exchangeRate).toFixed(2);
+        var bchValue = val / 100000000;
+        var fiatValue = (bchValue*exchangeRate).toFixed(2);
         var sign = "+";
         if (parseFloat(val) < 0) {
             sign = "-";
@@ -751,7 +751,7 @@
         }
 
         document.getElementById("nTransactions").innerHTML = parseInt(nTransactions) + 1;
-        document.getElementById("btc-balance").innerHTML = newBtcBalance;
+        document.getElementById("bch-balance").innerHTML = newBtcBalance;
         document.getElementById("fiat-balance").innerHTML = settings.fiatSymbol + newFiatBalance.toFixed(2);
 
         astilectron.send({name: "send", payload:{address: address, amount: satoshis, feeLevel: settings.feeLevel, note: note}});
