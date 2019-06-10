@@ -2,12 +2,13 @@ package bitcoincash
 
 import (
 	"bytes"
-	"github.com/OpenBazaar/wallet-interface"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/wire"
 	"os"
 	"testing"
+
+	"github.com/OpenBazaar/wallet-interface"
+	"github.com/gcash/bchd/chaincfg"
+	"github.com/gcash/bchd/chaincfg/chainhash"
+	"github.com/gcash/bchd/wire"
 )
 
 func MockWallet() *SPVWallet {

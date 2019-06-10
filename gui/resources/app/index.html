@@ -353,7 +353,7 @@
                     statsLoop();
                     break;
                 case "statsUpdate":
-                    document.getElementById("bch-balance").innerHTML = satoshiToBTCUnit(message.payload.confirmed);
+                    document.getElementById("bch-balance").innerHTML = satoshiToBCHUnit(message.payload.confirmed);
                     document.getElementById("fiat-balance").innerHTML = settings.fiatSymbol + message.payload.fiat;
                     document.getElementById("nTransactions").innerHTML = message.payload.transactions;
                     document.getElementById("exchangeRate").innerHTML = settings.fiatSymbol + message.payload.exchangeRate;
@@ -434,7 +434,7 @@
         var leftTopDiv = document.createElement("div");
         leftTopDiv.classList.add('flex');
         var fiatDiv = document.createElement("div");
-        var bchValue = satoshiToBTCUnit(tx.Value);
+        var bchValue = satoshiToBCHUnit(tx.Value);
         var sign = "+";
         if (parseFloat(tx.Value) < 0) {
             bchValue *= -1;
@@ -493,7 +493,7 @@
         return entry
     }
 
-    function satoshiToBTCUnit(satoshis) {
+    function satoshiToBCHUnit(satoshis) {
         var satoshisPerUnit;
         switch(settings.bitcoinUnit) {
             case "BCH":
@@ -741,9 +741,9 @@
 
         var note = document.getElementById("note").value;
 
-        var newBtcBalance = satoshiToBTCUnit(confirmedSatoshis - satoshis);
-        if (newBtcBalance < 0) {
-            newBtcBalance = 0;
+        var newBchBalance = satoshiToBCHUnit(confirmedSatoshis - satoshis);
+        if (newBchBalance < 0) {
+            newBchBalance = 0;
         }
         var newFiatBalance = ((confirmedSatoshis - satoshis) / 100000000) * exchangeRate;
         if (newFiatBalance < 0) {
@@ -751,7 +751,7 @@
         }
 
         document.getElementById("nTransactions").innerHTML = parseInt(nTransactions) + 1;
-        document.getElementById("bch-balance").innerHTML = newBtcBalance;
+        document.getElementById("bch-balance").innerHTML = newBchBalance;
         document.getElementById("fiat-balance").innerHTML = settings.fiatSymbol + newFiatBalance.toFixed(2);
 
         astilectron.send({name: "send", payload:{address: address, amount: satoshis, feeLevel: settings.feeLevel, note: note}});

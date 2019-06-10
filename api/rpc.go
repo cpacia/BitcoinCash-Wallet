@@ -3,7 +3,9 @@ package api
 import (
 	"encoding/hex"
 	"errors"
+	"math/rand"
 	"net"
+	"strconv"
 	"sync"
 
 	"github.com/OpenBazaar/wallet-interface"
@@ -210,7 +212,7 @@ func (s *server) Spend(ctx context.Context, in *pb.SpendInfo) (*pb.Txid, error) 
 	if err != nil {
 		return nil, err
 	}
-	txid, err := s.w.Spend(int64(in.Amount), addr, feeLevel)
+	txid, err := s.w.Spend(int64(in.Amount), addr, feeLevel, strconv.Itoa(rand.Int()))
 	if err != nil {
 		return nil, err
 	}

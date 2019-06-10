@@ -5,36 +5,38 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"net"
+	"net/url"
+	"os"
+	"os/signal"
+	"path"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/OpenBazaar/wallet-interface"
 	"github.com/asticode/go-astilectron"
 	"github.com/asticode/go-astilog"
 	"github.com/atotto/clipboard"
-	"github.com/gcash/bchd/bchec"
-	"github.com/gcash/bchd/chaincfg"
-	"github.com/gcash/bchutil"
 	bc "github.com/bubbajoe/BitcoinCash-Wallet"
 	"github.com/bubbajoe/BitcoinCash-Wallet/api"
 	"github.com/bubbajoe/BitcoinCash-Wallet/cli"
 	"github.com/bubbajoe/BitcoinCash-Wallet/db"
-	"github.com/bubbajoe/BitcoinCash-Wallet/exchangerates"
 	"github.com/bubbajoe/BitcoinCash-Wallet/gui"
 	"github.com/bubbajoe/BitcoinCash-Wallet/gui/bootstrap"
 	"github.com/fatih/color"
+	"github.com/gcash/bchd/bchec"
+	"github.com/gcash/bchd/chaincfg"
+	"github.com/gcash/bchutil"
 	"github.com/jessevdk/go-flags"
 	"github.com/natefinch/lumberjack"
 	"github.com/op/go-logging"
 	"github.com/skratchdot/open-golang/open"
 	"github.com/yawning/bulb"
 	"golang.org/x/net/proxy"
-	"io/ioutil"
-	"net"
-	"net/url"
-	"os"
-	"os/signal"
-	"path"
-	"strings"
-	"sync"
-	"time"
 )
 
 var parser = flags.NewParser(nil, flags.Default)
@@ -66,7 +68,7 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for range c {
-			fmt.Println("BitcoinCash wallet shutting down...")
+			fmt.Println("BitcoinCash-Wallet shutting down...")
 			cashWallet.Close()
 			os.Exit(1)
 		}
@@ -193,9 +195,6 @@ func (x *Start) Execute(args []string) error {
 	}
 	f.Write([]byte("1"))
 	f.Close()
-
-	exchangeRates := exchangerates.NewBitcoinCashPriceFetcher(config.Proxy)
-	config.ExchangeRateProvider = exchangeRates
 
 	// Load settings
 	type Fees struct {
@@ -372,7 +371,8 @@ func (x *Start) Execute(args []string) error {
 						astilog.Errorf(err.Error())
 						return
 					}
-					rate, err := exchangeRates.GetExchangeRate(p.CurrencyCode)
+					exchangeRate := cashWallet.ExchangeRates()
+					rate, err := exchangeRate.GetExchangeRate(p.CurrencyCode)
 					if err != nil {
 						astilog.Errorf("Failed to get exchange rate")
 						return
@@ -420,7 +420,8 @@ func (x *Start) Execute(args []string) error {
 						w.SendMessage(bootstrap.MessageOut{Name: "spendError", Payload: "Invalid address"})
 						return
 					}
-					_, err = cashWallet.Spend(int64(p.Amount), addr, feeLevel)
+					_, err = cashWallet.Spend(int64(p.Amount), addr, feeLevel, strconv.Itoa(rand.Int()))
+
 					if err != nil {
 						w.SendMessage(bootstrap.MessageOut{Name: "spendError", Payload: err.Error()})
 					}
