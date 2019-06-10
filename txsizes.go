@@ -4,10 +4,10 @@ package bitcoincash
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
-/* Copied here from a btcd internal package*/
+/* Copied here from a bchd internal package*/
 
 import (
-	"github.com/btcsuite/btcd/wire"
+	"github.com/gcash/bchd/wire"
 )
 
 // Worst case script and input/output size estimates.

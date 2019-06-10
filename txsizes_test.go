@@ -1,15 +1,15 @@
 package bitcoincash
 
-// Copyright (c) 2016 The btcsuite developers
+// Copyright (c) 2016 The gcash developers
 // Use of this source code is governed by an ISC
 // license that can be found in the LICENSE file.
 
-/* Copied here from a btcd internal package*/
+/* Copied here from a bchd internal package*/
 
 import (
 	"bytes"
 	"encoding/hex"
-	"github.com/btcsuite/btcd/wire"
+	"github.com/gcash/bchd/wire"
 	"testing"
 )
 

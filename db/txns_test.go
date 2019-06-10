@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/hex"
-	"github.com/btcsuite/btcd/wire"
+	"github.com/gcash/bchd/wire"
 	"sync"
 	"testing"
 	"time"

@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/OpenBazaar/wallet-interface"
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/gcash/bchd/bchec"
 	"math/rand"
 	"strconv"
 	"sync"
@@ -35,7 +35,7 @@ func (k *KeysDB) Put(scriptAddress []byte, keyPath wallet.KeyPath) error {
 	return nil
 }
 
-func (k *KeysDB) ImportKey(scriptAddress []byte, key *btcec.PrivateKey) error {
+func (k *KeysDB) ImportKey(scriptAddress []byte, key *bchec.PrivateKey) error {
 	k.lock.Lock()
 	defer k.lock.Unlock()
 	tx, err := k.db.Begin()
@@ -117,7 +117,7 @@ func (k *KeysDB) GetPathForKey(scriptAddress []byte) (wallet.KeyPath, error) {
 	return p, nil
 }
 
-func (k *KeysDB) GetKey(scriptAddress []byte) (*btcec.PrivateKey, error) {
+func (k *KeysDB) GetKey(scriptAddress []byte) (*bchec.PrivateKey, error) {
 	k.lock.RLock()
 	defer k.lock.RUnlock()
 
@@ -132,7 +132,7 @@ func (k *KeysDB) GetKey(scriptAddress []byte) (*btcec.PrivateKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	key, _ := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
+	key, _ := bchec.PrivKeyFromBytes(bchec.S256(), keyBytes)
 	return key, nil
 }
 
@@ -157,10 +157,10 @@ func (k *KeysDB) GetUnused(purpose wallet.KeyPurpose) ([]int, error) {
 	return ret, nil
 }
 
-func (k *KeysDB) GetImported() ([]*btcec.PrivateKey, error) {
+func (k *KeysDB) GetImported() ([]*bchec.PrivateKey, error) {
 	k.lock.RLock()
 	defer k.lock.RUnlock()
-	var ret []*btcec.PrivateKey
+	var ret []*bchec.PrivateKey
 	stm := "select key from keys where purpose=-1"
 	rows, err := k.db.Query(stm)
 	if err != nil {
@@ -177,7 +177,7 @@ func (k *KeysDB) GetImported() ([]*btcec.PrivateKey, error) {
 		if err != nil {
 			return ret, err
 		}
-		priv, _ := btcec.PrivKeyFromBytes(btcec.S256(), keyBytes)
+		priv, _ := bchec.PrivKeyFromBytes(bchec.S256(), keyBytes)
 		ret = append(ret, priv)
 	}
 	return ret, nil

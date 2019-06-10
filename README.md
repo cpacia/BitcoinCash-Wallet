@@ -4,12 +4,12 @@
 
 This is a fork of https://github.com/OpenBazaar/spvwallet modfied for Bitcoin Cash. It includes a fully functional GUI wallet and CLI.
 
-It uses stock btcd plus a few cash specific modifications found in the [bchutil](https://github.com/cpacia/bchutil) package.
+It uses stock bchd plus a few cash specific modifications found in the [bchutil](https://github.com/gcash/bchutil) package.
 
 To compile and run:
 ```bash
-go get github.com/cpacia/BitcoinCash-Wallet
+go get github.com/bubbajoe/BitcoinCash-Wallet
 make install
 bitcoincash
 ```
-Or download a pre-compiled version from [releases](https://github.com/cpacia/BitcoinCash-Wallet/releases).
+Or download a pre-compiled version from [releases](https://github.com/bubbajoe/BitcoinCash-Wallet/releases).

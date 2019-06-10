@@ -6,20 +6,21 @@ package bitcoincash
 import (
 	"bytes"
 	"errors"
-	"github.com/OpenBazaar/wallet-interface"
-	"github.com/btcsuite/btcd/blockchain"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcutil"
-	"github.com/btcsuite/btcutil/bloom"
 	"sync"
 	"time"
+
+	"github.com/OpenBazaar/wallet-interface"
+	"github.com/gcash/bchd/blockchain"
+	"github.com/gcash/bchd/chaincfg"
+	"github.com/gcash/bchd/chaincfg/chainhash"
+	"github.com/gcash/bchd/txscript"
+	"github.com/gcash/bchd/wire"
+	"github.com/gcash/bchutil"
+	"github.com/gcash/bchutil/bloom"
 )
 
 type TxStore struct {
-	adrs           []btcutil.Address
+	adrs           []bchutil.Address
 	watchedScripts [][]byte
 	txids          map[string]int32
 	addrMutex      *sync.Mutex
@@ -115,7 +116,7 @@ func (ts *TxStore) CheckDoubleSpends(argTx *wire.MsgTx) ([]*chainhash.Hash, erro
 		}
 		r := bytes.NewReader(compTx.Bytes)
 		msgTx := wire.NewMsgTx(1)
-		msgTx.BtcDecode(r, 1, wire.WitnessEncoding)
+		msgTx.BchDecode(r, 1, wire.BaseEncoding)
 		compTxid := msgTx.TxHash()
 		for _, argIn := range argTx.TxIn {
 			// iterate through inputs of compTx
@@ -177,7 +178,7 @@ func (ts *TxStore) GetPendingInv() (*wire.MsgInv, error) {
 func (ts *TxStore) PopulateAdrs() error {
 	keys := ts.keyManager.GetKeys()
 	ts.addrMutex.Lock()
-	ts.adrs = []btcutil.Address{}
+	ts.adrs = []bchutil.Address{}
 	for _, k := range keys {
 		addr, err := k.Address(ts.params)
 		if err != nil {
@@ -202,9 +203,9 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32, timestamp time.Time) (ui
 	var hits uint32
 	var err error
 	// Tx has been OK'd by SPV; check tx sanity
-	utilTx := btcutil.NewTx(tx) // convert for validation
+	utilTx := bchutil.NewTx(tx) // convert for validation
 	// Checks basic stuff like there are inputs and ouputs
-	err = blockchain.CheckTransactionSanity(utilTx)
+	err = blockchain.CheckTransactionSanity(utilTx, true, txscript.StandardVerifyFlags)
 	if err != nil {
 		return hits, err
 	}
@@ -375,7 +376,7 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32, timestamp time.Time) (ui
 			txn.Timestamp = timestamp
 			shouldCallback = true
 			var buf bytes.Buffer
-			tx.BtcEncode(&buf, 1, wire.BaseEncoding)
+			tx.BchEncode(&buf, 1, wire.BaseEncoding)
 			ts.Txns().Put(buf.Bytes(), tx.TxHash().String(), int(value), int(height), txn.Timestamp, hits == 0)
 			ts.txids[tx.TxHash().String()] = height
 		}
