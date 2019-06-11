@@ -439,8 +439,19 @@ func (w *SPVWallet) Params() *chaincfg.Params {
 	return w.params
 }
 
-func (w *SPVWallet) AddTransactionListener(callback func(wallet.TransactionCallback)) {
+func (w *SPVWallet) AddTransactionListener(everyTx bool, callback func(wallet.TransactionCallback)) int {
+	w.txstore.showEveryTx[len(w.txstore.listeners)] = everyTx
 	w.txstore.listeners = append(w.txstore.listeners, callback)
+	return len(w.txstore.listeners) - 1
+}
+
+func (w *SPVWallet) RemoveTransactionListener(cbId int) error {
+	if _, ok := w.txstore.showEveryTx[cbId]; !ok {
+		return errors.New("invalid transaction listener id")
+	}
+	w.txstore.listeners = append(w.txstore.listeners[:cbId], w.txstore.listeners[cbId+1:]...)
+	delete(w.txstore.showEveryTx, cbId)
+	return nil
 }
 
 func (w *SPVWallet) ChainTip() (uint32, chainhash.Hash) {
@@ -458,6 +469,18 @@ func (w *SPVWallet) AddWatchedAddress(addr bchutil.Address) error {
 		return err
 	}
 	err = w.txstore.WatchedScripts().Put(script)
+	w.txstore.PopulateAdrs()
+
+	w.wireService.MsgChan() <- updateFiltersMsg{}
+	return err
+}
+
+func (w *SPVWallet) RemoveWatchedAddress(addr bchutil.Address) error {
+	script, err := w.AddressToScript(addr)
+	if err != nil {
+		return err
+	}
+	err = w.txstore.WatchedScripts().Delete(script)
 	w.txstore.PopulateAdrs()
 
 	w.wireService.MsgChan() <- updateFiltersMsg{}

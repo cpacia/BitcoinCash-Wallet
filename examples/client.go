@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gcash/bchd/chaincfg"
-	"github.com/bubbajoe/BitcoinCash-Wallet"
+	bitcoincash "github.com/bubbajoe/BitcoinCash-Wallet"
 	"github.com/bubbajoe/BitcoinCash-Wallet/db"
+	"github.com/gcash/bchd/chaincfg"
 	"github.com/op/go-logging"
 )
 
@@ -21,7 +21,7 @@ func main() {
 	config.Logger = logging.MultiLogger(stdoutFormatter)
 
 	// Use testnet
-	config.Params = &chaincfg.TestNet3Params
+	config.Params = &chaincfg.MainNetParams
 
 	// Select wallet datastore
 	sqliteDatastore, _ := db.Create(config.RepoPath)
@@ -35,5 +35,6 @@ func main() {
 	}
 
 	// Start it!
-	wallet.Start()
+	go wallet.Start()
+	<-make(chan os.Signal)
 }

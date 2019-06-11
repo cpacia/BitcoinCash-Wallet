@@ -26,6 +26,7 @@ type TxStore struct {
 	addrMutex      *sync.Mutex
 	txidsMutex     *sync.RWMutex
 	cbMutex        *sync.Mutex
+	showEveryTx    map[int]bool
 
 	keyManager *KeyManager
 
@@ -46,6 +47,7 @@ func NewTxStore(p *chaincfg.Params, db wallet.Datastore, keyManager *KeyManager,
 		cbMutex:           new(sync.Mutex),
 		txidsMutex:        new(sync.RWMutex),
 		txids:             make(map[string]int32),
+		showEveryTx:       make(map[int]bool),
 		Datastore:         db,
 		additionalFilters: additionalFilters,
 	}
@@ -366,8 +368,8 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32, timestamp time.Time) (ui
 	}
 
 	// If hits is nonzero it's a relevant tx and we should store it
+	ts.cbMutex.Lock()
 	if hits > 0 || matchesWatchOnly {
-		ts.cbMutex.Lock()
 		ts.txidsMutex.Lock()
 		txn, err := ts.Txns().Get(tx.TxHash())
 		shouldCallback := false
@@ -398,10 +400,22 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32, timestamp time.Time) (ui
 				listener(cb)
 			}
 		}
-		ts.cbMutex.Unlock()
 		ts.PopulateAdrs()
 		hits++
+	} else {
+		cb.Value = value
+		cb.BlockTime = timestamp
+		for i, listener := range ts.listeners {
+			if shouldShow, ok := ts.showEveryTx[i]; ok && shouldShow {
+
+				listener(cb)
+			}
+		}
+
 	}
+	log.Debug(cb.Txid)
+	ts.cbMutex.Unlock()
+
 	return hits, err
 }
 

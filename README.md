@@ -106,11 +106,17 @@ type BitcoinWallet interface {
 	// Generate a multisig script from public keys. If a timeout is included the returned script should be a timelocked escrow which releases using the timeoutKey.
 	GenerateMultisigScript(keys []hd.ExtendedKey, threshold int, timeout time.Duration, timeoutKey *hd.ExtendedKey) (addr bchutil.Address, redeemScript []byte, err error)
 
-	// Add a script to the wallet and get notifications back when coins are received or spent from it
+	// Adds a script to the wallet and get notifications back when coins are received or spent from it
 	AddWatchedScript(script []byte) error
 
-	// Add a callback for incoming transactions
-	AddTransactionListener(func(spvwallet.TransactionCallback))
+	// Adds a script to the wallet and get notifications back when coins are received or spent from it
+	RemoveWatchedScript(script []byte) error
+
+	// Adds a callback for incoming transactions, push
+	AddTransactionListener(showEveryTx bool, callback func(spvwallet.TransactionCallback)) (callbackId int)
+
+	// Adds a callback for incoming transactions, push
+	RemoveTransactionListener(callbackId int) error
 
 	// Use this to re-download merkle blocks in case of missed transactions
 	ReSyncBlockchain(fromHeight int32)
