@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/OpenBazaar/wallet-interface"
+	"github.com/BubbaJoe/BitcoinCash-Wallet/wallet-interface"
 	bitcoincash "github.com/bubbajoe/BitcoinCash-Wallet"
 	"github.com/bubbajoe/BitcoinCash-Wallet/api/pb"
 	"github.com/gcash/bchd/bchec"

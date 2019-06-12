@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/hex"
-	"github.com/OpenBazaar/wallet-interface"
+	"github.com/BubbaJoe/BitcoinCash-Wallet/wallet-interface"
 	"github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchd/chaincfg/chainhash"
 	"github.com/gcash/bchd/txscript"

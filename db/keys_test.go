@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
-	"github.com/OpenBazaar/wallet-interface"
+	"github.com/BubbaJoe/BitcoinCash-Wallet/wallet-interface"
 	"github.com/gcash/bchd/bchec"
 	"sync"
 	"testing"

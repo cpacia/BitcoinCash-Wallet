@@ -1,7 +1,7 @@
 package bitcoincash
 
 import (
-	"github.com/OpenBazaar/wallet-interface"
+	"github.com/BubbaJoe/BitcoinCash-Wallet/wallet-interface"
 	"github.com/btcsuite/goleveldb/leveldb/errors"
 	"github.com/gcash/bchd/chaincfg"
 	hd "github.com/gcash/bchutil/hdkeychain"

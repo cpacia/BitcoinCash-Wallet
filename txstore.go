@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/OpenBazaar/wallet-interface"
+	"github.com/BubbaJoe/BitcoinCash-Wallet/wallet-interface"
 	"github.com/gcash/bchd/blockchain"
 	"github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchd/chaincfg/chainhash"
@@ -74,7 +74,7 @@ func (ts *TxStore) GimmeFilter() (*bloom.Filter, error) {
 	}
 	ts.addrMutex.Lock()
 	elem := uint32(len(ts.adrs)+len(allUtxos)+len(allStxos)) + uint32(len(ts.watchedScripts))
-	f := bloom.NewFilter(elem, 0, 0.00003, wire.BloomUpdateAll)
+	f := bloom.NewFilter(elem, 0, 1, wire.BloomUpdateAll)
 
 	// note there could be false positives since we're just looking
 	// for the 20 byte PKH without the opcodes.
@@ -230,11 +230,10 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32, timestamp time.Time) (ui
 		// First seen rule
 		if height == 0 {
 			return 0, nil
-		} else {
-			// Mark any unconfirmed doubles as dead
-			for _, double := range doubleSpends {
-				ts.markAsDead(*double)
-			}
+		}
+		// Mark any unconfirmed doubles as dead
+		for _, double := range doubleSpends {
+			ts.markAsDead(*double)
 		}
 	}
 
@@ -314,8 +313,10 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32, timestamp time.Time) (ui
 		return 0, err
 	}
 	for _, txin := range tx.TxIn {
+		_bcutxo := false
 		for i, u := range utxos {
 			if outPointsEqual(txin.PreviousOutPoint, u.Op) {
+				_bcutxo = true
 				st := wallet.Stxo{
 					Utxo:        u,
 					SpendHeight: height,
@@ -344,6 +345,15 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32, timestamp time.Time) (ui
 				cb.Inputs = append(cb.Inputs, in)
 				break
 			}
+		}
+		if !_bcutxo {
+			in := wallet.TransactionInput{
+				OutpointHash:  txin.PreviousOutPoint.Hash.CloneBytes(),
+				OutpointIndex: txin.PreviousOutPoint.Index,
+				LinkedAddress: nil,
+				Value:         -1,
+			}
+			cb.Inputs = append(cb.Inputs, in)
 		}
 	}
 
@@ -397,23 +407,21 @@ func (ts *TxStore) Ingest(tx *wire.MsgTx, height int32, timestamp time.Time) (ui
 		if shouldCallback {
 			// Callback on listeners
 			for _, listener := range ts.listeners {
-				listener(cb)
+				if listener != nil {
+					listener(cb)
+				}
 			}
 		}
 		ts.PopulateAdrs()
 		hits++
 	} else {
-		cb.Value = value
 		cb.BlockTime = timestamp
 		for i, listener := range ts.listeners {
-			if shouldShow, ok := ts.showEveryTx[i]; ok && shouldShow {
-
+			if shouldShow, ok := ts.showEveryTx[i]; ok && shouldShow && (listener != nil) {
 				listener(cb)
 			}
 		}
-
 	}
-	log.Debug(cb.Txid)
 	ts.cbMutex.Unlock()
 
 	return hits, err

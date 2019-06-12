@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/OpenBazaar/wallet-interface"
+	"github.com/BubbaJoe/BitcoinCash-Wallet/wallet-interface"
 	"github.com/bubbajoe/BitcoinCash-Wallet/exchangerates"
 	"github.com/gcash/bchd/bchec"
 	"github.com/gcash/bchd/chaincfg"
@@ -449,8 +449,24 @@ func (w *SPVWallet) RemoveTransactionListener(cbId int) error {
 	if _, ok := w.txstore.showEveryTx[cbId]; !ok {
 		return errors.New("invalid transaction listener id")
 	}
-	w.txstore.listeners = append(w.txstore.listeners[:cbId], w.txstore.listeners[cbId+1:]...)
+	w.txstore.listeners[cbId] = nil
 	delete(w.txstore.showEveryTx, cbId)
+	return nil
+}
+
+func (w *SPVWallet) AddBlockListener(tipOnly bool, callback func(wallet.BlockCallback)) int {
+	id := len(w.wireService.listeners)
+	w.wireService.showTipOnly[id] = tipOnly
+	w.wireService.listeners = append(w.wireService.listeners, callback)
+	return id
+}
+
+func (w *SPVWallet) RemoveBlockListener(cbId int) error {
+	if ok := w.wireService.showTipOnly[cbId]; !ok {
+		return errors.New("invalid transaction listener id")
+	}
+	w.wireService.listeners[cbId] = nil
+	delete(w.wireService.showTipOnly, cbId)
 	return nil
 }
 

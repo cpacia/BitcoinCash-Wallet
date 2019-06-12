@@ -6,14 +6,15 @@ package bitcoincash
 import (
 	"errors"
 	"fmt"
-	"github.com/gcash/bchd/blockchain"
-	"github.com/gcash/bchd/chaincfg"
-	"github.com/gcash/bchd/chaincfg/chainhash"
-	"github.com/gcash/bchd/wire"
 	"math/big"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/gcash/bchd/blockchain"
+	"github.com/gcash/bchd/chaincfg"
+	"github.com/gcash/bchd/chaincfg/chainhash"
+	"github.com/gcash/bchd/wire"
 )
 
 // Blockchain settings.  These are kindof Bitcoin specific, but not contained in
@@ -154,7 +155,7 @@ func (b *Blockchain) CheckHeader(header wire.BlockHeader, prevHeader StoredHeade
 	if b.params.Name != chaincfg.RegressionNetParams.Name { // Don't need to check difficulty on regtest
 		diffTarget, err := b.calcRequiredWork(header, int32(height+1), prevHeader)
 		if err != nil {
-			log.Errorf("Error calclating difficulty", err)
+			log.Errorf("Error calclating difficulty: %v", err)
 			return false
 		}
 		if header.Bits != diffTarget && b.params.Name == chaincfg.MainNetParams.Name {

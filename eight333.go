@@ -2,8 +2,10 @@ package bitcoincash
 
 import (
 	"net"
+	"sync"
 	"time"
 
+	"github.com/BubbaJoe/BitcoinCash-Wallet/wallet-interface"
 	"github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchd/chaincfg/chainhash"
 	peerpkg "github.com/gcash/bchd/peer"
@@ -92,8 +94,13 @@ type WireService struct {
 	mempool            map[chainhash.Hash]struct{}
 	msgChan            chan interface{}
 	quit               chan struct{}
-	minPeersForSync    int
-	zeroHash           chainhash.Hash
+
+	showTipOnly map[int]bool
+	listeners   []func(wallet.BlockCallback)
+	cbMutex     *sync.Mutex
+
+	minPeersForSync int
+	zeroHash        chainhash.Hash
 }
 
 func NewWireService(config *WireServiceConfig) *WireService {
@@ -107,7 +114,9 @@ func NewWireService(config *WireServiceConfig) *WireService {
 		requestedTxns:      make(map[chainhash.Hash]heightAndTime),
 		requestedBlocks:    make(map[chainhash.Hash]struct{}),
 		mempool:            make(map[chainhash.Hash]struct{}),
+		showTipOnly:        make(map[int]bool),
 		msgChan:            make(chan interface{}),
+		cbMutex:            new(sync.Mutex),
 	}
 }
 
@@ -363,6 +372,7 @@ func (ws *WireService) handleHeadersMsg(hmsg *headersMsg) {
 				badHeaders++
 				log.Errorf("Commit header error: %s", err.Error())
 			}
+
 			log.Infof("Received header %s at height %d", blockHeader.BlockHash().String(), height)
 		} else {
 			log.Info("Switching to downloading merkle blocks")
@@ -485,6 +495,30 @@ func (ws *WireService) handleMerkleBlockMsg(bmsg *merkleBlockMsg) {
 		log.Debugf("Received duplicate block %s", blockHash.String())
 		return
 	}
+
+	ws.cbMutex.Lock()
+	cb := wallet.BlockCallback{
+		Hash:      header.BlockHash().String(),
+		Height:    newHeight,
+		Timestamp: header.Timestamp,
+		ChainTip:  (len(state.requestQueue) == 0),
+		PrevBlock: header.PrevBlock.String(),
+		Version:   header.Version,
+	}
+
+	for i, listener := range ws.listeners {
+		header.BlockHash().String()
+		if showTip, ok := ws.showTipOnly[i]; ok && (listener != nil) {
+			if showTip {
+				if cb.ChainTip {
+					listener(cb)
+				}
+			} else {
+				listener(cb)
+			}
+		}
+	}
+	ws.cbMutex.Unlock()
 
 	log.Infof("Received merkle block %s at height %d", blockHash.String(), newHeight)
 
@@ -670,10 +704,7 @@ func (ws *WireService) handleTxMsg(tmsg *txMsg) {
 	delete(ws.requestedTxns, txHash)
 
 	// If this transaction had no hits, update the peer's false positive counter
-	if hits == 0 {
-		log.Debugf("Tx %s from Peer%d had no hits, filter false positive.", txHash.String(), peer.ID())
-		state.falsePositives++
-	} else {
+	if hits > 0 {
 		log.Noticef("Ingested new tx %s at height %d", txHash.String(), ht.height)
 	}
 

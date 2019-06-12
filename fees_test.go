@@ -2,7 +2,7 @@ package bitcoincash
 
 import (
 	"bytes"
-	"github.com/OpenBazaar/wallet-interface"
+	"github.com/BubbaJoe/BitcoinCash-Wallet/wallet-interface"
 	"testing"
 )
 
