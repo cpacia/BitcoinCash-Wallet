@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/BubbaJoe/BitcoinCash-Wallet/wallet-interface"
-	"github.com/bubbajoe/BitcoinCash-Wallet/exchangerates"
+	"github.com/BubbaJoe/spvwallet-cash/wallet-interface"
+	"github.com/BubbaJoe/spvwallet-cash/exchangerates"
 	"github.com/gcash/bchd/bchec"
 	"github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchd/chaincfg/chainhash"

@@ -3,7 +3,7 @@ package bitcoincash
 import (
 	"bytes"
 	"encoding/hex"
-	"github.com/BubbaJoe/BitcoinCash-Wallet/wallet-interface"
+	"github.com/BubbaJoe/spvwallet-cash/wallet-interface"
 	"github.com/gcash/bchd/bchec"
 	"github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchd/txscript"

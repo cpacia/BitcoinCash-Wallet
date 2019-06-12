@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/BubbaJoe/BitcoinCash-Wallet/wallet-interface"
-	bitcoincash "github.com/bubbajoe/BitcoinCash-Wallet"
-	"github.com/bubbajoe/BitcoinCash-Wallet/api/pb"
+	"github.com/BubbaJoe/spvwallet-cash/wallet-interface"
+	bitcoincash "github.com/BubbaJoe/spvwallet-cash"
+	"github.com/BubbaJoe/spvwallet-cash/api/pb"
 	"github.com/gcash/bchd/bchec"
 	"github.com/gcash/bchd/chaincfg"
 	"github.com/gcash/bchd/chaincfg/chainhash"

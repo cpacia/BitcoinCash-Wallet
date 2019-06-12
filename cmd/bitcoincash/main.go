@@ -17,16 +17,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/BubbaJoe/BitcoinCash-Wallet/wallet-interface"
+	"github.com/BubbaJoe/spvwallet-cash/wallet-interface"
 	"github.com/asticode/go-astilectron"
 	"github.com/asticode/go-astilog"
 	"github.com/atotto/clipboard"
-	bc "github.com/bubbajoe/BitcoinCash-Wallet"
-	"github.com/bubbajoe/BitcoinCash-Wallet/api"
-	"github.com/bubbajoe/BitcoinCash-Wallet/cli"
-	"github.com/bubbajoe/BitcoinCash-Wallet/db"
-	"github.com/bubbajoe/BitcoinCash-Wallet/gui"
-	"github.com/bubbajoe/BitcoinCash-Wallet/gui/bootstrap"
+	bc "github.com/BubbaJoe/spvwallet-cash"
+	"github.com/BubbaJoe/spvwallet-cash/api"
+	"github.com/BubbaJoe/spvwallet-cash/cli"
+	"github.com/BubbaJoe/spvwallet-cash/db"
+	"github.com/BubbaJoe/spvwallet-cash/gui"
+	"github.com/BubbaJoe/spvwallet-cash/gui/bootstrap"
 	"github.com/fatih/color"
 	"github.com/gcash/bchd/bchec"
 	"github.com/gcash/bchd/chaincfg"
@@ -68,7 +68,7 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for range c {
-			fmt.Println("BitcoinCash-Wallet shutting down...")
+			fmt.Println("spvwallet-cash shutting down...")
 			cashWallet.Close()
 			os.Exit(1)
 		}

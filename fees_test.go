@@ -2,7 +2,7 @@ package bitcoincash
 
 import (
 	"bytes"
-	"github.com/BubbaJoe/BitcoinCash-Wallet/wallet-interface"
+	"github.com/BubbaJoe/spvwallet-cash/wallet-interface"
 	"testing"
 )
 

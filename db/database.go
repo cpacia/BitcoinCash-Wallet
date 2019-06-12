@@ -2,7 +2,7 @@ package db
 
 import (
 	"database/sql"
-	"github.com/BubbaJoe/BitcoinCash-Wallet/wallet-interface"
+	"github.com/BubbaJoe/spvwallet-cash/wallet-interface"
 	_ "github.com/mattn/go-sqlite3"
 	"path"
 	"sync"

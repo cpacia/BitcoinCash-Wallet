@@ -1,7 +1,7 @@
 package bitcoincash
 
 import (
-	"github.com/BubbaJoe/BitcoinCash-Wallet/wallet-interface"
+	"github.com/BubbaJoe/spvwallet-cash/wallet-interface"
 	"github.com/gcash/bchd/chaincfg"
 	"github.com/mitchellh/go-homedir"
 	"github.com/op/go-logging"

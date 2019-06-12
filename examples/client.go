@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	bitcoincash "github.com/bubbajoe/BitcoinCash-Wallet"
-	"github.com/bubbajoe/BitcoinCash-Wallet/db"
+	bitcoincash "github.com/BubbaJoe/spvwallet-cash"
+	"github.com/BubbaJoe/spvwallet-cash/db"
 	"github.com/gcash/bchd/chaincfg"
 	"github.com/op/go-logging"
 )

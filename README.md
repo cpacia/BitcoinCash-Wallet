@@ -2,7 +2,7 @@
 
 <img src="https://bitcoin.tax/blog/content/images/2017/08/bitcoincash.png">
 
-This is a fork of https://github.com/cpacia/BitcoinCash-Wallet, which is a fork of https://github.com/OpenBazaar/spvwallet modfied for Bitcoin Cash. It includes a fully functional GUI wallet, Go Library and CLI.
+This is a fork of https://github.com/cpacia/spvwallet-cash, which is a fork of https://github.com/OpenBazaar/spvwallet modfied for Bitcoin Cash. It includes a fully functional GUI wallet, Go Library and CLI.
 
 It uses stock bchd plus a few cash specific modifications found in the [bchutil](https://github.com/gcash/bchutil) package.
 
